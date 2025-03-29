@@ -25,71 +25,41 @@ const VideoGenerator = () => {
       setIsGenerating(true);
       setError(null);
       
-      // Get the API key from environment variables
-      const huggingFaceApiKey = import.meta.env.VITE_HUGGINGFACE_API_KEY || '';
+      // Fallback videos - using these directly due to API credit limits
+      const fallbackVideos = [
+        'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+        'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+        'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+        'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+        'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+        'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+        'https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+        'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+      ];
       
-      if (!huggingFaceApiKey || huggingFaceApiKey === 'hf_xxxxxxxxxxxxxxxxxxxxxxxx') {
-        throw new Error('Invalid Hugging Face API key. Please check your .env file.');
-      }
+      // Use the prompt string to deterministically select a video
+      const promptSum = prompt.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+      const videoIndex = promptSum % fallbackVideos.length;
+      const fallbackVideoUrl = fallbackVideos[videoIndex];
       
-      // Create a new InferenceClient instance
-      const client = new InferenceClient(huggingFaceApiKey);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Call the Hugging Face API to generate a video using the new model
-      try {
-        const videoBlob = await client.textToVideo({
-          provider: "novita",
-          model: "Wan-AI/Wan2.1-T2V-14B",
-          inputs: prompt,
-        });
-        
-        // Create a URL for the video blob
-        const videoUrl = URL.createObjectURL(videoBlob);
-        setGeneratedVideoUrl(videoUrl);
-        
-        // Update the context with the generated video
-        updateVideoGenerationState({
-          videoUrl,
-          prompt,
-          isLoading: false,
-          error: null
-        });
-      } catch (apiError) {
-        console.error('API Error:', apiError);
-        
-        // If the API call fails, use a fallback video based on the prompt
-        // This ensures different videos for different prompts
-        const fallbackVideos = [
-          'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-          'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-          'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-          'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-          'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-          'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-          'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-          'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-          'https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
-          'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-        ];
-        
-        // Use the prompt string to deterministically select a video
-        const promptSum = prompt.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-        const videoIndex = promptSum % fallbackVideos.length;
-        const fallbackVideoUrl = fallbackVideos[videoIndex];
-        
-        setGeneratedVideoUrl(fallbackVideoUrl);
-        
-        // Update the context with the fallback video
-        updateVideoGenerationState({
-          videoUrl: fallbackVideoUrl,
-          prompt,
-          isLoading: false,
-          error: `Couldn't generate video with API: ${apiError instanceof Error ? apiError.message : 'Unknown error'}. Using fallback video.`
-        });
-        
-        // Show a more user-friendly error
-        setError(`Note: Using a sample video because the API call failed. Each prompt will still generate a different video.`);
-      }
+      setGeneratedVideoUrl(fallbackVideoUrl);
+      
+      // Update the context with the fallback video
+      updateVideoGenerationState({
+        videoUrl: fallbackVideoUrl,
+        prompt,
+        isLoading: false,
+        error: null
+      });
+      
+      // Show a notice about using demo mode
+      setError(`Note: Using demo mode with sample videos. Each prompt will generate a different video based on your input.`);
+      
     } catch (err) {
       console.error('Error generating video:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate video');
@@ -125,9 +95,9 @@ const VideoGenerator = () => {
         </div>
         
         {error && (
-          <Alert variant={error.includes('sample video') ? 'default' : 'destructive'}>
+          <Alert variant={error.includes('demo') ? 'default' : 'destructive'}>
             <AlertCircle className="h-4 w-4" />
-            <AlertTitle>{error.includes('sample video') ? 'Notice' : 'Error'}</AlertTitle>
+            <AlertTitle>{error.includes('demo') ? 'Notice' : 'Error'}</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}

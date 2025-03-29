@@ -50,6 +50,13 @@ export type VideoGenerationState = {
   prompt: string;
 };
 
+export type ImageGenerationState = {
+  isLoading: boolean;
+  imageUrl: string | null;
+  error: string | null;
+  prompt: string;
+};
+
 type EventContextType = {
   latestEventAnalysis: EventAnalysis | null;
   updateEventAnalysis: (analysis: EventAnalysis) => void;
@@ -66,6 +73,9 @@ type EventContextType = {
   videoGeneration: VideoGenerationState;
   updateVideoGenerationState: (state: Partial<VideoGenerationState>) => void;
   generateVideo: (prompt: string) => Promise<void>;
+  imageGeneration: ImageGenerationState;
+  updateImageGenerationState: (state: Partial<ImageGenerationState>) => void;
+  generateImage: (prompt: string) => Promise<void>;
 };
 
 const EventContext = createContext<EventContextType | undefined>(undefined);
@@ -84,6 +94,12 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [videoGeneration, setVideoGeneration] = useState<VideoGenerationState>({
     isLoading: false,
     videoUrl: null,
+    error: null,
+    prompt: ''
+  });
+  const [imageGeneration, setImageGeneration] = useState<ImageGenerationState>({
+    isLoading: false,
+    imageUrl: null,
     error: null,
     prompt: ''
   });
@@ -116,6 +132,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setVideoGeneration(prev => ({ ...prev, ...state }));
   };
 
+  const updateImageGenerationState = (state: Partial<ImageGenerationState>) => {
+    setImageGeneration(prev => ({ ...prev, ...state }));
+  };
+
   const generateVideo = async (prompt: string) => {
     try {
       updateVideoGenerationState({ isLoading: true, error: null, prompt });
@@ -141,6 +161,30 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const generateImage = async (prompt: string) => {
+    try {
+      updateImageGenerationState({ isLoading: true, error: null, prompt });
+      
+      // This would be implemented with actual API call in a real application
+      // For now, we'll simulate the API call with a timeout
+      
+      // Simulating API call delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Mock success response
+      updateImageGenerationState({ 
+        isLoading: false, 
+        imageUrl: 'https://example.com/generated-image.jpg' 
+      });
+    } catch (error) {
+      console.error('Error generating image:', error);
+      updateImageGenerationState({ 
+        isLoading: false, 
+        error: error instanceof Error ? error.message : 'Failed to generate image' 
+      });
+    }
+  };
+
   return (
     <EventContext.Provider value={{ 
       latestEventAnalysis, 
@@ -157,7 +201,10 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       updateEventType,
       videoGeneration,
       updateVideoGenerationState,
-      generateVideo
+      generateVideo,
+      imageGeneration,
+      updateImageGenerationState,
+      generateImage
     }}>
       {children}
     </EventContext.Provider>
