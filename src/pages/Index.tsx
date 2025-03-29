@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, MapPin, Users, MessageSquare, Calendar, Clock } from "lucide-react";
+import { Search, MapPin, Users, MessageSquare, Calendar, Clock, UserPlus } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Hero from "../components/Hero";
 import FeatureSection from "../components/FeatureSection";
 import FeedbackForm from "../components/FeedbackForm";
+import ApplicationForm from "../components/ApplicationForm";
 
 type Event = {
   _id: string;
@@ -23,6 +24,7 @@ const Index = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedEventForApplication, setSelectedEventForApplication] = useState<Event | null>(null);
 
   // Fetch events from the backend
   const fetchEvents = async () => {
@@ -167,13 +169,21 @@ const Index = () => {
                             <Users className="w-4 h-4" />
                             <span className="text-sm">Organized by {event.organizer}</span>
                           </div>
-                          <div className="mt-4 pt-2 border-t">
+                          <div className="mt-4 pt-2 border-t flex justify-between">
                             <button
                               onClick={() => setSelectedEventId(event._id)}
                               className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
                             >
                               <MessageSquare className="w-4 h-4" />
                               <span className="text-sm font-medium">Provide Feedback</span>
+                            </button>
+                            
+                            <button
+                              onClick={() => setSelectedEventForApplication(event)}
+                              className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 transition-colors"
+                            >
+                              <UserPlus className="w-4 h-4" />
+                              <span className="text-sm font-medium">Apply</span>
                             </button>
                           </div>
                         </div>
@@ -193,6 +203,19 @@ const Index = () => {
           <div className="bg-white rounded-lg shadow-lg max-w-lg w-full p-6">
             <h2 className="text-2xl font-bold mb-4">Provide Feedback</h2>
             <FeedbackForm eventId={selectedEventId} onClose={() => setSelectedEventId(null)} />
+          </div>
+        </div>
+      )}
+
+      {/* Application Form Modal */}
+      {selectedEventForApplication && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-lg w-full">
+            <ApplicationForm 
+              eventId={selectedEventForApplication._id} 
+              eventName={selectedEventForApplication.name} 
+              onClose={() => setSelectedEventForApplication(null)} 
+            />
           </div>
         </div>
       )}

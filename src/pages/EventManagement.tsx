@@ -13,8 +13,12 @@ import {
   FileText, 
   AlertTriangle,
   Calendar,
-  MapPin
+  MapPin,
+  Mail, 
+  Send
 } from 'lucide-react';
+import { toast, Toaster } from "react-hot-toast"; 
+import { Button } from "@/components/ui/button";
 
 type FormData = {
   eventName: string;
@@ -41,6 +45,11 @@ type AIGeneratedTask = {
   assignedTo?: string;
 };
 
+type TeamEmail = {
+  team: string;
+  email: string;
+};
+
 const EventManagement = () => {
   const [formData, setFormData] = useState<FormData | null>(null);
   const [pastEvents, setPastEvents] = useState<PastEventData[]>([]);
@@ -60,6 +69,103 @@ const EventManagement = () => {
 
   const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
   const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+
+  const teamEmails: TeamEmail[] = [
+    { team: 'pr', email: 'pr-team@example.com' },
+    { team: 'tech', email: 'atharvaprabhu691@gmail.com' },
+    { team: 'logistics', email: 'logistics-team@example.com' },
+    { team: 'creatives', email: 'creatives-team@example.com' },
+  ];
+
+  const formatEmailContent = (teamType: string, tasks: AIGeneratedTask[]) => {
+    const date = new Date().toLocaleDateString();
+    const subject = `[${formData?.eventName || 'Event'}] Tasks for ${teamType.toUpperCase()} Team - ${date}`;
+    
+    let body = `
+Dear ${teamType.charAt(0).toUpperCase() + teamType.slice(1)} Team,
+
+I hope this email finds you well. Below are the tasks assigned to your team for the upcoming event "${formData?.eventName || 'Event'}".
+
+TASKS:
+${tasks.map((task, index) => `
+${index + 1}. ${task.description}
+   Priority: ${task.complexity}
+   Estimated Time: ${task.estimatedTime}
+   Assigned To: ${task.assignedTo || teamType + ' Team'}
+`).join('')}
+
+Please review these tasks and let me know if you have any questions or concerns. Your timely completion of these tasks is crucial for the success of our event.
+
+Best regards,
+Event Management Team
+`;
+
+    return { subject, body };
+  };
+
+  const sendTeamEmail = async (teamType: string) => {
+    try {
+      setIsLoading(true);
+      const tasks = aiGeneratedTasks[teamType as keyof typeof aiGeneratedTasks] || [];
+      
+      if (tasks.length === 0) {
+        toast.error(`No tasks available for ${teamType} team`);
+        return;
+      }
+      
+      const teamEmail = teamEmails.find(t => t.team === teamType)?.email;
+      if (!teamEmail) {
+        toast.error(`Email address not found for ${teamType} team`);
+        return;
+      }
+      
+      const { subject, body } = formatEmailContent(teamType, tasks);
+      
+      // In a real application, you would send this via your backend API
+      // For now, we'll simulate sending and show a success message
+      
+      // Example of how you would call your backend API:
+      /*
+      const response = await fetch('http://localhost:5000/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          to: teamEmail,
+          subject,
+          body,
+          teamType
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+      */
+      
+      // For demonstration, we'll just log the email content and show a success message
+      console.log('Email Content:', { to: teamEmail, subject, body });
+      
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      toast.success(`Email sent to ${teamType} team at ${teamEmail}`);
+    } catch (error) {
+      console.error(`Error sending email to ${teamType} team:`, error);
+      toast.error(`Failed to send email to ${teamType} team: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendAllTeamEmails = async () => {
+    const teamTypes = ['pr', 'tech', 'logistics', 'creatives'];
+    for (const team of teamTypes) {
+      await sendTeamEmail(team);
+    }
+  };
 
   const fetchPastEvents = async () => {
     try {
@@ -230,6 +336,20 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
 
     return (
       <div className="space-y-4">
+        {tasks.length > 0 && (
+          <div className="flex justify-end mb-4">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => sendTeamEmail(teamType)}
+              disabled={isLoading}
+              className="flex items-center gap-2"
+            >
+              <Mail size={16} />
+              Email Tasks to {teamType.toUpperCase()} Team
+            </Button>
+          </div>
+        )}
         {tasks.map((task, index) => (
           <Card key={index} className="w-full">
             <CardHeader>
@@ -270,6 +390,7 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
+      <Toaster position="top-right" />
       <div className="container mx-auto px-4 py-24">
         <Tabs defaultValue="planning" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
@@ -296,6 +417,16 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
                 {/* Tasks Display Section */}
                 {Object.keys(aiGeneratedTasks).length > 0 && (
                   <div className="max-w-4xl mx-auto mt-12">
+                    <div className="flex justify-end mb-4">
+                      <Button 
+                        onClick={sendAllTeamEmails}
+                        disabled={isLoading}
+                        className="flex items-center gap-2"
+                      >
+                        <Send size={16} />
+                        Send Tasks to All Teams
+                      </Button>
+                    </div>
                     <Tabs 
                       value={selectedTab} 
                       onValueChange={setSelectedTab}
