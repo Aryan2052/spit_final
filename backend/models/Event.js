@@ -9,6 +9,12 @@ const EventSchema = new mongoose.Schema({
   image: { type: String, required: false },
   imageUrl: { type: String, required: false },
   organizer: { type: String, required: true },
+  category: { 
+    type: String, 
+    required: true, 
+    enum: ['sports', 'tech', 'cultural'],
+    default: 'tech'
+  },
 }, { timestamps: true });
 
 module.exports = mongoose.model("Event", EventSchema);

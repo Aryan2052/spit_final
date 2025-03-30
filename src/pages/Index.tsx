@@ -6,6 +6,13 @@ import Footer from "../components/Footer";
 import Hero from "../components/Hero";
 import FeatureSection from "../components/FeatureSection";
 import FeedbackForm from "../components/FeedbackForm";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type Event = {
   _id: string;
@@ -15,11 +22,13 @@ type Event = {
   location: string;
   image: string;
   organizer: string;
+  category?: string;
 };
 
 const Index = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -46,11 +55,25 @@ const Index = () => {
     fetchEvents();
   }, []);
 
-  const filteredEvents = events.filter((event) =>
-    event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.location?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEvents = events.filter((event) => {
+    // Filter by search term
+    const matchesSearch = 
+      event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.location?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Filter by category if one is selected (but not 'all')
+    const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  // Check if event date is in the past
+  const isEventPast = (eventDate: string) => {
+    const today = new Date();
+    const eventDateTime = new Date(eventDate);
+    return eventDateTime < today;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -67,7 +90,7 @@ const Index = () => {
               <p className="text-gray-600 max-w-2xl mx-auto mb-8">
                 Explore the latest events happening in your organization.
               </p>
-              <div className="max-w-md mx-auto">
+              <div className="max-w-md mx-auto mb-8">
                 <div className="relative">
                   <input
                     type="text"
@@ -93,6 +116,21 @@ const Index = () => {
                   </svg>
                 </div>
               </div>
+              
+              {/* Category Filter */}
+              <div className="max-w-md mx-auto">
+                <Select onValueChange={setSelectedCategory} value={selectedCategory}>
+                  <SelectTrigger className="w-full p-3 rounded-lg border border-gray-200 shadow-sm">
+                    <SelectValue placeholder="Filter by category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="sports">Sports</SelectItem>
+                    <SelectItem value="tech">Tech</SelectItem>
+                    <SelectItem value="cultural">Cultural</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             {loading ? (
@@ -109,8 +147,8 @@ const Index = () => {
                 {filteredEvents.length === 0 ? (
                   <div className="col-span-full text-center py-12">
                     <p className="text-gray-500 text-lg">
-                      {searchTerm
-                        ? "No events found matching your search."
+                      {searchTerm || selectedCategory
+                        ? "No events found matching your criteria."
                         : "No events available at the moment."}
                     </p>
                   </div>
@@ -134,6 +172,12 @@ const Index = () => {
                             target.src = '/placeholder-event.svg';
                           }}
                         />
+                        {/* Category Badge */}
+                        {event.category && (
+                          <div className="absolute top-2 right-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                            {event.category.charAt(0).toUpperCase() + event.category.slice(1)}
+                          </div>
+                        )}
                       </div>
                       <div className="p-6 flex-grow">
                         <h3 className="text-xl font-semibold mb-2 text-gray-800">
@@ -182,6 +226,23 @@ const Index = () => {
                               <MessageSquare className="w-4 h-4" />
                               <span className="text-sm font-medium">Provide Feedback</span>
                             </button>
+                            
+                            {/* Registration Status */}
+                            <div className="ml-auto">
+                              {isEventPast(event.timeline) ? (
+                                <span className="inline-block bg-gray-500 text-white px-3 py-1 rounded text-sm">
+                                  Closed Registration
+                                </span>
+                              ) : (
+                                <Link
+                                  to={`/event/${event._id}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="inline-block bg-green-500 text-white px-3 py-1 rounded text-sm hover:bg-green-600"
+                                >
+                                  Register Now
+                                </Link>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -15,6 +15,7 @@ type FormData = {
   techTasks: string;
   logisticsTasks: string;
   creativesTasks: string;
+  category: string;
 };
 
 type PastEventData = {
@@ -25,6 +26,7 @@ type PastEventData = {
   location: string;
   image: string;
   organizer: string;
+  category?: string;
 };
 
 type EventManagementFormProps = {
@@ -42,11 +44,14 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
   onEventSelect,
   selectedEvent 
 }) => {
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormData>();
+  const { register, handleSubmit, formState: { errors }, setValue, control } = useForm<FormData>();
 
   useEffect(() => {
     if (selectedEvent) {
       setValue("eventName", selectedEvent.name);
+      if (selectedEvent.category) {
+        setValue("category", selectedEvent.category);
+      }
     }
   }, [selectedEvent, setValue]);
 
@@ -54,7 +59,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
     <form onSubmit={handleSubmit(onSubmit)} className="mb-12 space-y-4">
       <div className="space-y-4">
         <label className="block text-sm font-medium">Select Existing Event</label>
-        <Select onValueChange={onEventSelect} value={selectedEvent?._id}>
+        <Select onValueChange={onEventSelect} value={selectedEvent?._id || "none"}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select an event" />
           </SelectTrigger>
@@ -73,6 +78,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
             <p><strong>Date:</strong> {new Date(selectedEvent.date).toLocaleDateString()}</p>
             <p><strong>Location:</strong> {selectedEvent.location}</p>
             <p><strong>Organizer:</strong> {selectedEvent.organizer}</p>
+            <p><strong>Category:</strong> {selectedEvent.category || 'Not specified'}</p>
           </div>
         )}
       </div>
@@ -87,6 +93,25 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
           readOnly={!!selectedEvent}
         />
         {errors.eventName && <p className="text-red-500 text-sm">{errors.eventName.message}</p>}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Event Category</label>
+        <Select 
+          onValueChange={(value) => setValue("category", value)} 
+          defaultValue={selectedEvent?.category || "tech"}
+        >
+          <SelectTrigger className="w-full p-2 border rounded">
+            <SelectValue placeholder="Select a category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="sports">Sports</SelectItem>
+            <SelectItem value="tech">Tech</SelectItem>
+            <SelectItem value="cultural">Cultural</SelectItem>
+          </SelectContent>
+        </Select>
+        <input type="hidden" {...register("category", { required: "Category is required" })} />
+        {errors.category && <p className="text-red-500 text-sm">{errors.category.message}</p>}
       </div>
 
       <div>

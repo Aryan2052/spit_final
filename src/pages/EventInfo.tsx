@@ -24,6 +24,7 @@ interface Event {
   image?: string;
   imageUrl?: string;
   organizer?: string;
+  category?: string;
 }
 
 interface FAQ {
@@ -76,6 +77,14 @@ const EventInfo = () => {
   const [faqSearchResult, setFaqSearchResult] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useContext(AuthContext);
+  
+  // Check if event date is in the past
+  const isEventPast = (eventDate?: string) => {
+    if (!eventDate) return false;
+    const today = new Date();
+    const eventDateTime = new Date(eventDate);
+    return eventDateTime < today;
+  };
   
   useEffect(() => {
     const fetchEvent = async () => {
@@ -141,6 +150,15 @@ const EventInfo = () => {
   };
   
   const handleRegistrationOpen = () => {
+    if (event && isEventPast(event.timeline || event.date)) {
+      toast({
+        title: "Registration Closed",
+        description: "Registration for this event has ended as the event date has passed.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -375,8 +393,16 @@ const EventInfo = () => {
                 </div>
                 
                 <div className="flex flex-wrap gap-2 mb-6">
-                  <Badge className="bg-primary/10 text-primary">Hackathon</Badge>
-                  <Badge className="bg-green-500/10 text-green-500">Registration Open</Badge>
+                  {event.category && (
+                    <Badge className="bg-blue-500/10 text-blue-500">
+                      {event.category.charAt(0).toUpperCase() + event.category.slice(1)}
+                    </Badge>
+                  )}
+                  {isEventPast(event.timeline || event.date) ? (
+                    <Badge className="bg-gray-500/10 text-gray-500">Registration Closed</Badge>
+                  ) : (
+                    <Badge className="bg-green-500/10 text-green-500">Registration Open</Badge>
+                  )}
                 </div>
                 
                 <div className="flex space-x-3">
@@ -384,6 +410,11 @@ const EventInfo = () => {
                     <Button variant="outline" disabled className="bg-green-50">
                       <Check className="h-4 w-4 mr-2 text-green-500" />
                       Registered
+                    </Button>
+                  ) : isEventPast(event.timeline || event.date) ? (
+                    <Button variant="outline" disabled className="bg-gray-50">
+                      <X className="h-4 w-4 mr-2 text-gray-500" />
+                      Closed Registration
                     </Button>
                   ) : (
                     <Button onClick={handleRegistrationOpen}>Register Now</Button>
