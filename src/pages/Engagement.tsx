@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -22,6 +21,28 @@ import {
   Clock,
   X
 } from 'lucide-react';
+import DiscussionForum from '@/components/DiscussionForum';
+
+// Define interfaces
+interface Event {
+  _id: string;
+  name: string;
+  description: string;
+  timeline: string;
+  location: string;
+}
+
+interface PayUOptions {
+  key: string;
+  txnid: string;
+  amount: string;
+  productinfo: string;
+  firstname: string;
+  email: string;
+  phone: string;
+  surl: string;
+  furl: string;
+}
 
 const Engagement = () => {
   const [activeTab, setActiveTab] = useState("registration");
