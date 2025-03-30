@@ -57,6 +57,15 @@ interface BudgetSummary {
   }
 }
 
+interface Event {
+  _id: string;
+  name: string;
+  description: string;
+  date?: string;
+  timeline?: string;
+  location: string;
+}
+
 const BudgetOptimization = () => {
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [newItem, setNewItem] = useState<Omit<BudgetItem, 'id' | 'totalCost'>>({
@@ -71,6 +80,9 @@ const BudgetOptimization = () => {
   const [eventDate, setEventDate] = useState('');
   const [eventDescription, setEventDescription] = useState('');
   const [attendees, setAttendees] = useState(100);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const [loadingEvents, setLoadingEvents] = useState(false);
   const [budgetSummary, setBudgetSummary] = useState<BudgetSummary>({
     totalOriginal: 0,
     totalOptimized: 0,
@@ -99,6 +111,50 @@ const BudgetOptimization = () => {
     // Calculate budget summary whenever budget items change
     calculateBudgetSummary();
   }, [budgetItems]);
+
+  useEffect(() => {
+    // Fetch events when component mounts
+    fetchEvents();
+  }, []);
+
+  useEffect(() => {
+    // Update event details when a different event is selected
+    if (selectedEventId) {
+      const selectedEvent = events.find(event => event._id === selectedEventId);
+      if (selectedEvent) {
+        setEventName(selectedEvent.name);
+        setEventDescription(selectedEvent.description || '');
+        
+        // Set event date from timeline or date property
+        const dateString = selectedEvent.date || selectedEvent.timeline;
+        if (dateString) {
+          // Format the date for the input (YYYY-MM-DD)
+          try {
+            const eventDate = new Date(dateString);
+            setEventDate(eventDate.toISOString().split('T')[0]);
+          } catch (error) {
+            console.error('Error parsing date:', error);
+          }
+        }
+      }
+    }
+  }, [selectedEventId, events]);
+
+  const fetchEvents = async () => {
+    try {
+      setLoadingEvents(true);
+      const response = await fetch("http://localhost:5000/api/events");
+      if (!response.ok) {
+        throw new Error('Failed to fetch events');
+      }
+      const data = await response.json();
+      setEvents(data);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
 
   const calculateBudgetSummary = () => {
     const summary: BudgetSummary = {
@@ -341,12 +397,23 @@ Format your response as valid JSON:
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium mb-1 block">Event Name</label>
-                      <Input 
-                        placeholder="Enter event name" 
-                        value={eventName}
-                        onChange={(e) => setEventName(e.target.value)}
-                      />
+                      <label className="text-sm font-medium mb-1 block">Event</label>
+                      <select
+                        className="w-full p-2 border rounded-md"
+                        value={selectedEventId}
+                        onChange={(e) => setSelectedEventId(e.target.value)}
+                        disabled={loadingEvents}
+                      >
+                        <option value="">-- Select an event --</option>
+                        {events.map(event => (
+                          <option key={event._id} value={event._id}>
+                            {event.name}
+                          </option>
+                        ))}
+                      </select>
+                      {loadingEvents && (
+                        <p className="text-xs text-muted-foreground mt-1">Loading events...</p>
+                      )}
                     </div>
                     <div>
                       <label className="text-sm font-medium mb-1 block">Event Date</label>
