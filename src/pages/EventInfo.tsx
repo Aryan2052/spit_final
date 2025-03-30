@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Calendar, MapPin, Clock, Users, ChevronLeft, Share2, Check, Search, X } from 'lucide-react';
+import { Calendar, MapPin, Clock, Users, ChevronLeft, Share2, Check, Search, X, Trophy } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -423,6 +423,14 @@ const EventInfo = () => {
                     <Share2 className="h-4 w-4 mr-2" />
                     Share
                   </Button>
+                  {isRegistered && (
+                    <Link to={`/event/${event._id}/gamification`}>
+                      <Button variant="default">
+                        <Trophy className="h-4 w-4 mr-2" />
+                        Gamification
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

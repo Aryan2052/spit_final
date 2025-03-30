@@ -9,6 +9,8 @@ const feedbackRoutes = require("./routes/feedbackRoutes");
 const messageRoutes = require("./routes/messageRoutes"); // Import message routes
 const geminiRoutes = require("./routes/geminiRoutes"); // Import Gemini routes
 const registrationRoutes = require("./routes/registrationRoutes"); // Import registration routes
+const gamificationRoutes = require("./routes/gamificationRoutes"); // Import gamification routes
+const challengeRoutes = require("./routes/challengeRoutes"); // Import challenge routes
 dotenv.config();
 connectDB();
 
@@ -24,5 +26,7 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/messages", messageRoutes); // Add message routes
 app.use("/api/gemini", geminiRoutes); // Add Gemini routes
 app.use("/api/registrations", registrationRoutes); // Add registration routes
+app.use("/api/gamification", gamificationRoutes); // Add gamification routes
+app.use("/api/challenges", challengeRoutes); // Add challenge routes
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

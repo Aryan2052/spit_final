@@ -90,7 +90,6 @@ const Navbar = () => {
                 <Link to="/engagement" className="nav-link">Engagement</Link>
                 <Link to="/analytics" className="nav-link">Analytics</Link>
                 <Link to="/budget-optimization" className="nav-link">Predictive Budget Optimization</Link>
-                <Link to="/add-event" className="nav-link">Add event</Link>
               </>
             )}
           </nav>
@@ -180,7 +179,6 @@ const Navbar = () => {
                 <Link to="/engagement" className="nav-link py-2">Engagement</Link>
                 <Link to="/analytics" className="nav-link py-2">Analytics</Link>
                 <Link to="/budget-optimization" className="nav-link py-2">Predictive Budget Optimization</Link>
-                
                 {/* Mobile Registered Events */}
                 <div className="py-2">
                   <div className="flex items-center space-x-2 mb-2">
