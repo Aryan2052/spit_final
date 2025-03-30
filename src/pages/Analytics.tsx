@@ -243,7 +243,7 @@ const Analytics = () => {
 
           {/* Attendees Section */}
           <div className="mt-12">
-            <h2 className="text-2xl font-bold mb-6">Recent Attendee Feedback</h2>
+            <h2 className="text-2xl font-bold mb-6"></h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {feedbackAnalysis.attendees.slice(0, 6).map((attendee, index) => (
                 <Card key={index} className="glass-card card-3d-effect">
