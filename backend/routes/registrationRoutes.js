@@ -1,11 +1,11 @@
 const express = require("express");
 const Registration = require("../models/Registration");
 const Event = require("../models/Event");
-const auth = require("../middleware/auth");
+const { protect } = require("../middleware/authMiddleware");
 const router = express.Router();
 
 // Register for an event
-router.post("/", auth, async (req, res) => {
+router.post("/", protect, async (req, res) => {
   try {
     const { eventId } = req.body;
     
@@ -49,7 +49,7 @@ router.post("/", auth, async (req, res) => {
 });
 
 // Get all events a user is registered for
-router.get("/my-events", auth, async (req, res) => {
+router.get("/my-events", protect, async (req, res) => {
   try {
     const registrations = await Registration.find({ userId: req.user.id })
       .populate('eventId')
@@ -66,7 +66,7 @@ router.get("/my-events", auth, async (req, res) => {
 });
 
 // Check if user is registered for a specific event
-router.get("/check/:eventId", auth, async (req, res) => {
+router.get("/check/:eventId", protect, async (req, res) => {
   try {
     const registration = await Registration.findOne({
       userId: req.user.id,
@@ -81,7 +81,7 @@ router.get("/check/:eventId", auth, async (req, res) => {
 });
 
 // Cancel registration
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", protect, async (req, res) => {
   try {
     const registration = await Registration.findOne({
       _id: req.params.id,
