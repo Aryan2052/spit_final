@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -17,13 +18,20 @@ import {
   MapPin,
   Users,
   Send,
-  Search
+  Search,
+  Clock,
+  X
 } from 'lucide-react';
-import DiscussionForum from '@/components/DiscussionForum';
 
 const Engagement = () => {
   const [activeTab, setActiveTab] = useState("registration");
   const [message, setMessage] = useState("");
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showEventModal, setShowEventModal] = useState(false);
+  const [processingPayment, setProcessingPayment] = useState(false);
   
   // Mock attendee data
   const attendees = [
@@ -35,6 +43,129 @@ const Engagement = () => {
     { id: 6, name: "Jordan Lee", university: "Business Academy", interests: ["Finance", "Entrepreneurship"], avatar: "JL" },
   ];
   
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/events");
+        const data = await response.json();
+        setEvents(data);
+        setLoading(false);
+      } catch (error) {
+        setError('Failed to fetch events');
+        setLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
+  const makePayment = async (amount, ticketType) => {
+    setProcessingPayment(true);
+    
+    try {
+      // Check if we're in development mode
+      const isDevelopment = window.location.hostname === 'localhost' || 
+                            window.location.hostname === '127.0.0.1';
+      
+      // For development environment, offer a simulated payment
+      if (isDevelopment) {
+        setTimeout(() => {
+          const confirmPayment = window.confirm(
+            `This is a development environment. Would you like to simulate a successful payment of ₹${amount} for a ${ticketType} ticket to ${selectedEvent?.name}?`
+          );
+          
+          if (confirmPayment) {
+            alert('Payment simulation successful! In production, this would process a real payment.');
+            setProcessingPayment(false);
+            setShowEventModal(false);
+          } else {
+            setProcessingPayment(false);
+          }
+        }, 1000);
+        return;
+      }
+      
+      // For production, use PayU form-based payment
+      try {
+        // In a real implementation, this would be a backend call to generate the hash
+        // For this example, we're showing the structure without the hash
+        const paymentData: PayUOptions = {
+          key: "gtKFFx", // PayU test merchant key
+          txnid: `TXN_${Date.now()}`, // Unique transaction ID
+          amount: amount.toString(),
+          productinfo: `${ticketType} Ticket for ${selectedEvent?.name || 'Campus Event'}`,
+          firstname: "Test User", // In a real app, get from form or user profile
+          email: "test@example.com", // In a real app, get from form or user profile
+          phone: "9999999999", // In a real app, get from form or user profile
+          surl: `${window.location.origin}/payment-success`, // Success URL 
+          furl: `${window.location.origin}/payment-failure` // Failure URL
+        };
+        
+        // Create a form element
+        const form = document.createElement('form');
+        form.method = 'post';
+        form.action = 'https://test.payu.in/_payment'; // PayU TEST endpoint
+        form.style.display = 'none';
+        form.target = '_blank'; // Open in new tab
+        
+        // Add form fields
+        Object.entries(paymentData).forEach(([key, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = key;
+          input.value = value;
+          form.appendChild(input);
+        });
+        
+        // Add event ID and ticket type as custom fields
+        if (selectedEvent?._id) {
+          const eventIdInput = document.createElement('input');
+          eventIdInput.type = 'hidden';
+          eventIdInput.name = 'udf1'; // User defined field 1
+          eventIdInput.value = selectedEvent._id;
+          form.appendChild(eventIdInput);
+        }
+        
+        const ticketTypeInput = document.createElement('input');
+        ticketTypeInput.type = 'hidden';
+        ticketTypeInput.name = 'udf2'; // User defined field 2
+        ticketTypeInput.value = ticketType;
+        form.appendChild(ticketTypeInput);
+        
+        // Append form to body
+        document.body.appendChild(form);
+        
+        // Submit form
+        form.submit();
+        
+        // Clean up form after submission
+        setTimeout(() => {
+          document.body.removeChild(form);
+          setProcessingPayment(false);
+        }, 1000);
+        
+      } catch (error) {
+        console.error("PayU integration failed:", error);
+        
+        // Fallback to simulation if PayU fails
+        const confirmPayment = window.confirm(
+          `Payment gateway connection failed. Would you like to simulate a payment of ₹${amount} for a ${ticketType} ticket instead?`
+        );
+        
+        if (confirmPayment) {
+          alert('Payment simulation successful! In production, this would process a real payment.');
+          setProcessingPayment(false);
+          setShowEventModal(false);
+        } else {
+          setProcessingPayment(false);
+        }
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      alert('Payment failed. Please try again later.');
+      setProcessingPayment(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <Navbar />
@@ -129,155 +260,242 @@ const Engagement = () => {
             
             {/* Ticketing Tab */}
             <TabsContent value="ticketing" className="animate-fade-in">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="glass-card card-3d-effect border-0">
-                  <div className="h-2 bg-blue-500"></div>
-                  <CardHeader>
-                    <CardTitle>Standard Ticket</CardTitle>
-                    <CardDescription>
-                      Basic access to the main event
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold mb-4">$0</div>
-                    <ul className="space-y-2">
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        Main event access
-                      </li>
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        Digital program
-                      </li>
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        General seating
-                      </li>
-                    </ul>
-                  </CardContent>
-                  <CardFooter>
-                    <Button className="w-full">Get Ticket</Button>
-                  </CardFooter>
-                </Card>
-                
-                <Card className="glass-card card-3d-effect border-0 relative">
-                  <div className="absolute top-4 right-4">
-                    <Badge className="bg-primary text-white">Popular</Badge>
+              {/* Upcoming Events Section */}
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4">Upcoming Events</h2>
+                {loading ? (
+                  <div className="text-center">
+                    <Clock className="h-8 w-8 animate-spin" />
                   </div>
-                  <div className="h-2 bg-primary"></div>
-                  <CardHeader>
-                    <CardTitle>Premium Ticket</CardTitle>
-                    <CardDescription>
-                      Enhanced experience with extra perks
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold mb-4">$15</div>
-                    <ul className="space-y-2">
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        All Standard features
-                      </li>
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        Priority seating
-                      </li>
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        Networking reception access
-                      </li>
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        Swag bag
-                      </li>
-                    </ul>
-                  </CardContent>
-                  <CardFooter>
-                    <Button className="w-full" variant="default">Get Ticket</Button>
-                  </CardFooter>
-                </Card>
-                
-                <Card className="glass-card card-3d-effect border-0">
-                  <div className="h-2 bg-purple-500"></div>
-                  <CardHeader>
-                    <CardTitle>VIP Ticket</CardTitle>
-                    <CardDescription>
-                      Complete experience with exclusive benefits
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-3xl font-bold mb-4">$30</div>
-                    <ul className="space-y-2">
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        All Premium features
-                      </li>
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        VIP lounge access
-                      </li>
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        Meet & greet with speakers
-                      </li>
-                      <li className="flex items-center text-sm">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
-                        Exclusive after-party
-                      </li>
-                    </ul>
-                  </CardContent>
-                  <CardFooter>
-                    <Button className="w-full">Get Ticket</Button>
-                  </CardFooter>
-                </Card>
+                ) : error ? (
+                  <div className="text-center text-red-500">{error}</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {events.map((event) => (
+                      <Card key={event._id} className="glass-card card-3d-effect border-0 cursor-pointer hover:shadow-lg transition-all">
+                        <div className="h-40 bg-gradient-to-r from-blue-500/30 to-purple-500/30 flex items-center justify-center">
+                          <Calendar className="h-12 w-12 text-primary" />
+                        </div>
+                        <CardHeader>
+                          <CardTitle>{event.name}</CardTitle>
+                          <CardDescription>{event.timeline}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-sm text-muted-foreground mb-2">{event.location}</p>
+                          <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20">Tickets Available</Badge>
+                        </CardContent>
+                        <CardFooter>
+                          <Button className="w-full" onClick={() => {
+                            setSelectedEvent(event);
+                            setShowEventModal(true);
+                          }}>View Event Details</Button>
+                        </CardFooter>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
+
+              {/* Event Ticket Section */}
+              {selectedEvent && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4">Tickets for: {selectedEvent.name}</h2>
+                  <div className="mb-6 p-4 bg-primary/5 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-2">About This Event</h3>
+                    <p className="text-muted-foreground">{selectedEvent.description}</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card className="glass-card card-3d-effect border-0">
+                      <div className="h-2 bg-blue-500"></div>
+                      <CardHeader>
+                        <CardTitle>Standard Ticket</CardTitle>
+                        <CardDescription>
+                          Basic access to the main event
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold mb-4">₹0</div>
+                        <ul className="space-y-2">
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            Main event access
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            Digital program
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            General seating
+                          </li>
+                        </ul>
+                      </CardContent>
+                      <CardFooter>
+                        <Button 
+                          className="w-full" 
+                          onClick={() => makePayment(0, 'Standard')}
+                          disabled={processingPayment}
+                        >
+                          {processingPayment ? (
+                            <div className="flex items-center justify-center">
+                              <Clock className="h-4 w-4 animate-spin mr-2" />
+                              Processing...
+                            </div>
+                          ) : (
+                            <div>Register Free</div>
+                          )}
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                    
+                    <Card className="glass-card card-3d-effect border-0 relative">
+                      <div className="absolute top-4 right-4">
+                        <Badge className="bg-primary text-white">Popular</Badge>
+                      </div>
+                      <div className="h-2 bg-primary"></div>
+                      <CardHeader>
+                        <CardTitle>Premium Ticket</CardTitle>
+                        <CardDescription>
+                          Enhanced experience with extra perks
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold mb-4">₹1,200</div>
+                        <ul className="space-y-2">
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            All Standard features
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            Priority seating
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            Networking reception access
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            Swag bag
+                          </li>
+                        </ul>
+                      </CardContent>
+                      <CardFooter>
+                        <Button 
+                          className="w-full" 
+                          onClick={() => makePayment(1200, 'Premium')}
+                          disabled={processingPayment}
+                        >
+                          {processingPayment ? (
+                            <div className="flex items-center justify-center">
+                              <Clock className="h-4 w-4 animate-spin mr-2" />
+                              Processing...
+                            </div>
+                          ) : (
+                            <div>Pay ₹1,200</div>
+                          )}
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                    
+                    <Card className="glass-card card-3d-effect border-0">
+                      <div className="h-2 bg-purple-500"></div>
+                      <CardHeader>
+                        <CardTitle>VIP Ticket</CardTitle>
+                        <CardDescription>
+                          Complete experience with exclusive benefits
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-3xl font-bold mb-4">₹2,500</div>
+                        <ul className="space-y-2">
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            All Premium features
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            VIP lounge access
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            Meet & greet with speakers
+                          </li>
+                          <li className="flex items-center text-sm">
+                            <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                            Exclusive after-party
+                          </li>
+                        </ul>
+                      </CardContent>
+                      <CardFooter>
+                        <Button 
+                          className="w-full" 
+                          onClick={() => makePayment(2500, 'VIP')}
+                          disabled={processingPayment}
+                        >
+                          {processingPayment ? (
+                            <div className="flex items-center justify-center">
+                              <Clock className="h-4 w-4 animate-spin mr-2" />
+                              Processing...
+                            </div>
+                          ) : (
+                            <div>Pay ₹2,500</div>
+                          )}
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  </div>
+                </div>
+              )}
               
               <div className="mt-8">
-                <Card className="glass-card card-3d-effect border-0">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Calendar className="mr-2 h-5 w-5" />
-                      Event Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h3 className="font-semibold mb-4">Spring Tech Festival 2023</h3>
-                        <p className="text-muted-foreground mb-6">
-                          Join us for a day of innovation, learning, and networking at our annual Spring Tech Festival!
-                        </p>
-                        <div className="space-y-2">
-                          <div className="flex items-center text-sm">
-                            <Calendar className="mr-2 h-4 w-4 text-primary" />
-                            <span>April 15, 2023 | 10:00 AM - 6:00 PM</span>
-                          </div>
-                          <div className="flex items-center text-sm">
-                            <MapPin className="mr-2 h-4 w-4 text-primary" />
-                            <span>University Conference Center, Building 4</span>
-                          </div>
-                          <div className="flex items-center text-sm">
-                            <Mail className="mr-2 h-4 w-4 text-primary" />
-                            <span>events@university.edu</span>
-                          </div>
-                          <div className="flex items-center text-sm">
-                            <Phone className="mr-2 h-4 w-4 text-primary" />
-                            <span>(555) 123-4567</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="rounded-lg bg-gradient-to-r from-primary/20 to-accent/20 h-48 flex items-center justify-center text-center p-4">
+                {selectedEvent && (
+                  <Card className="glass-card card-3d-effect border-0">
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <Calendar className="mr-2 h-5 w-5" />
+                        Event Details
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                          <div className="font-semibold mb-2">Interactive Event Map</div>
-                          <div className="text-sm text-muted-foreground">
-                            Click to view detailed venue map with
-                            session locations and amenities
+                          <h3 className="font-semibold mb-4">{selectedEvent.name}</h3>
+                          <p className="text-muted-foreground mb-6">
+                            Join us for a day of innovation, learning, and networking at our annual Spring Tech Festival!
+                          </p>
+                          <div className="space-y-2">
+                            <div className="flex items-center text-sm">
+                              <Calendar className="mr-2 h-4 w-4 text-primary" />
+                              <span>{selectedEvent.timeline}</span>
+                            </div>
+                            <div className="flex items-center text-sm">
+                              <MapPin className="mr-2 h-4 w-4 text-primary" />
+                              <span>{selectedEvent.location}</span>
+                            </div>
+                            <div className="flex items-center text-sm">
+                              <Mail className="mr-2 h-4 w-4 text-primary" />
+                              <span>events@university.edu</span>
+                            </div>
+                            <div className="flex items-center text-sm">
+                              <Phone className="mr-2 h-4 w-4 text-primary" />
+                              <span>(555) 123-4567</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="rounded-lg bg-gradient-to-r from-primary/20 to-accent/20 h-48 flex items-center justify-center text-center p-4">
+                          <div>
+                            <div className="font-semibold mb-2">Interactive Event Map</div>
+                            <div className="text-sm text-muted-foreground">
+                              Click to view detailed venue map with
+                              session locations and amenities
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             </TabsContent>
             
@@ -333,6 +551,163 @@ const Engagement = () => {
         </div>
       </main>
       <Footer />
+      
+      {/* Event Details Modal */}
+      {showEventModal && (
+        <div className="fixed inset-0 bg-background/50 flex items-center justify-center">
+          <div className="max-w-2xl w-full bg-white rounded-lg p-8 relative">
+            <button 
+              className="absolute top-4 right-4"
+              onClick={() => setShowEventModal(false)}
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <h2 className="text-2xl font-bold mb-4">{selectedEvent?.name}</h2>
+            <p className="text-muted-foreground mb-6">{selectedEvent?.description}</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="glass-card card-3d-effect border-0">
+                <div className="h-2 bg-blue-500"></div>
+                <CardHeader>
+                  <CardTitle>Standard Ticket</CardTitle>
+                  <CardDescription>
+                    Basic access to the main event
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-4">₹0</div>
+                  <ul className="space-y-2">
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      Main event access
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      Digital program
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      General seating
+                    </li>
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => makePayment(0, 'Standard')}
+                    disabled={processingPayment}
+                  >
+                    {processingPayment ? (
+                      <div className="flex items-center justify-center">
+                        <Clock className="h-4 w-4 animate-spin mr-2" />
+                        Processing...
+                      </div>
+                    ) : (
+                      <div>Register Free</div>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              <Card className="glass-card card-3d-effect border-0 relative">
+                <div className="absolute top-4 right-4">
+                  <Badge className="bg-primary text-white">Popular</Badge>
+                </div>
+                <div className="h-2 bg-primary"></div>
+                <CardHeader>
+                  <CardTitle>Premium Ticket</CardTitle>
+                  <CardDescription>
+                    Enhanced experience with extra perks
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-4">₹1,200</div>
+                  <ul className="space-y-2">
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      All Standard features
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      Priority seating
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      Networking reception access
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      Swag bag
+                    </li>
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => makePayment(1200, 'Premium')}
+                    disabled={processingPayment}
+                  >
+                    {processingPayment ? (
+                      <div className="flex items-center justify-center">
+                        <Clock className="h-4 w-4 animate-spin mr-2" />
+                        Processing...
+                      </div>
+                    ) : (
+                      <div>Pay ₹1,200</div>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+              
+              <Card className="glass-card card-3d-effect border-0">
+                <div className="h-2 bg-purple-500"></div>
+                <CardHeader>
+                  <CardTitle>VIP Ticket</CardTitle>
+                  <CardDescription>
+                    Complete experience with exclusive benefits
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold mb-4">₹2,500</div>
+                  <ul className="space-y-2">
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      All Premium features
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      VIP lounge access
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      Meet & greet with speakers
+                    </li>
+                    <li className="flex items-center text-sm">
+                      <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
+                      Exclusive after-party
+                    </li>
+                  </ul>
+                </CardContent>
+                <CardFooter>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => makePayment(2500, 'VIP')}
+                    disabled={processingPayment}
+                  >
+                    {processingPayment ? (
+                      <div className="flex items-center justify-center">
+                        <Clock className="h-4 w-4 animate-spin mr-2" />
+                        Processing...
+                      </div>
+                    ) : (
+                      <div>Pay ₹2,500</div>
+                    )}
+                  </Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
