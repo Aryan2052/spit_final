@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Search, MapPin, Users, MessageSquare, Calendar, Clock } from "lucide-react";
+import { Search, MapPin, Users, MessageSquare, Calendar, Clock, Trophy } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import Hero from "../components/Hero";
@@ -228,7 +228,7 @@ const Index = () => {
                             </button>
                             
                             {/* Registration Status */}
-                            <div className="ml-auto">
+                            <div className="ml-auto flex space-x-2">
                               {isEventPast(event.timeline) ? (
                                 <span className="inline-block bg-gray-500 text-white px-3 py-1 rounded text-sm">
                                   Closed Registration
@@ -242,6 +242,14 @@ const Index = () => {
                                   Register Now
                                 </Link>
                               )}
+                              <Link
+                                to={`/event/${event._id}/gamification`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="inline-flex items-center bg-purple-500 text-white px-3 py-1 rounded text-sm hover:bg-purple-600"
+                              >
+                                <Trophy className="w-3 h-3 mr-1" />
+                                Gamify
+                              </Link>
                             </div>
                           </div>
                         </div>

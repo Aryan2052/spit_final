@@ -22,6 +22,7 @@ import {
   X
 } from 'lucide-react';
 import DiscussionForum from '@/components/DiscussionForum';
+import PaymentModal from '../components/PaymentModal';
 
 // Define interfaces
 interface Event {
@@ -45,7 +46,7 @@ interface PayUOptions {
 }
 
 const Engagement = () => {
-  const [activeTab, setActiveTab] = useState("registration");
+  const [activeTab, setActiveTab] = useState("ticketing");
   const [message, setMessage] = useState("");
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -53,6 +54,9 @@ const Engagement = () => {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showEventModal, setShowEventModal] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentTicketType, setPaymentTicketType] = useState('');
   
   // Mock attendee data
   const attendees = [
@@ -80,111 +84,9 @@ const Engagement = () => {
   }, []);
 
   const makePayment = async (amount, ticketType) => {
-    setProcessingPayment(true);
-    
-    try {
-      // Check if we're in development mode
-      const isDevelopment = window.location.hostname === 'localhost' || 
-                            window.location.hostname === '127.0.0.1';
-      
-      // For development environment, offer a simulated payment
-      if (isDevelopment) {
-        setTimeout(() => {
-          const confirmPayment = window.confirm(
-            `This is a development environment. Would you like to simulate a successful payment of ₹${amount} for a ${ticketType} ticket to ${selectedEvent?.name}?`
-          );
-          
-          if (confirmPayment) {
-            alert('Payment simulation successful! In production, this would process a real payment.');
-            setProcessingPayment(false);
-            setShowEventModal(false);
-          } else {
-            setProcessingPayment(false);
-          }
-        }, 1000);
-        return;
-      }
-      
-      // For production, use PayU form-based payment
-      try {
-        // In a real implementation, this would be a backend call to generate the hash
-        // For this example, we're showing the structure without the hash
-        const paymentData: PayUOptions = {
-          key: "gtKFFx", // PayU test merchant key
-          txnid: `TXN_${Date.now()}`, // Unique transaction ID
-          amount: amount.toString(),
-          productinfo: `${ticketType} Ticket for ${selectedEvent?.name || 'Campus Event'}`,
-          firstname: "Test User", // In a real app, get from form or user profile
-          email: "test@example.com", // In a real app, get from form or user profile
-          phone: "9999999999", // In a real app, get from form or user profile
-          surl: `${window.location.origin}/payment-success`, // Success URL 
-          furl: `${window.location.origin}/payment-failure` // Failure URL
-        };
-        
-        // Create a form element
-        const form = document.createElement('form');
-        form.method = 'post';
-        form.action = 'https://test.payu.in/_payment'; // PayU TEST endpoint
-        form.style.display = 'none';
-        form.target = '_blank'; // Open in new tab
-        
-        // Add form fields
-        Object.entries(paymentData).forEach(([key, value]) => {
-          const input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = key;
-          input.value = value;
-          form.appendChild(input);
-        });
-        
-        // Add event ID and ticket type as custom fields
-        if (selectedEvent?._id) {
-          const eventIdInput = document.createElement('input');
-          eventIdInput.type = 'hidden';
-          eventIdInput.name = 'udf1'; // User defined field 1
-          eventIdInput.value = selectedEvent._id;
-          form.appendChild(eventIdInput);
-        }
-        
-        const ticketTypeInput = document.createElement('input');
-        ticketTypeInput.type = 'hidden';
-        ticketTypeInput.name = 'udf2'; // User defined field 2
-        ticketTypeInput.value = ticketType;
-        form.appendChild(ticketTypeInput);
-        
-        // Append form to body
-        document.body.appendChild(form);
-        
-        // Submit form
-        form.submit();
-        
-        // Clean up form after submission
-        setTimeout(() => {
-          document.body.removeChild(form);
-          setProcessingPayment(false);
-        }, 1000);
-        
-      } catch (error) {
-        console.error("PayU integration failed:", error);
-        
-        // Fallback to simulation if PayU fails
-        const confirmPayment = window.confirm(
-          `Payment gateway connection failed. Would you like to simulate a payment of ₹${amount} for a ${ticketType} ticket instead?`
-        );
-        
-        if (confirmPayment) {
-          alert('Payment simulation successful! In production, this would process a real payment.');
-          setProcessingPayment(false);
-          setShowEventModal(false);
-        } else {
-          setProcessingPayment(false);
-        }
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      alert('Payment failed. Please try again later.');
-      setProcessingPayment(false);
-    }
+    setPaymentAmount(amount);
+    setPaymentTicketType(ticketType);
+    setShowPaymentModal(true);
   };
 
   return (
@@ -202,12 +104,9 @@ const Engagement = () => {
             </p>
           </div>
           
-          <Tabs defaultValue="registration" className="w-full" onValueChange={setActiveTab}>
+          <Tabs defaultValue="ticketing" className="w-full" onValueChange={setActiveTab}>
             <div className="flex justify-center mb-8">
-              <TabsList className="grid grid-cols-1 sm:grid-cols-3 w-full max-w-2xl">
-                <TabsTrigger value="registration" className="py-3">
-                  <UserPlus className="h-4 w-4 mr-2" /> Registration
-                </TabsTrigger>
+              <TabsList className="grid grid-cols-1 sm:grid-cols-2 w-full max-w-2xl">
                 <TabsTrigger value="ticketing" className="py-3">
                   <Ticket className="h-4 w-4 mr-2" /> Ticketing
                 </TabsTrigger>
@@ -217,73 +116,18 @@ const Engagement = () => {
               </TabsList>
             </div>
             
-            {/* Registration Tab */}
-            <TabsContent value="registration" className="animate-fade-in">
-              <Card className="glass-card card-3d-effect border-0">
-                <CardHeader>
-                  <CardTitle>Event Registration Form</CardTitle>
-                  <CardDescription>
-                    Register for our upcoming campus event
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form className="space-y-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label htmlFor="firstName" className="text-sm font-medium">First Name</label>
-                        <Input id="firstName" placeholder="Enter your first name" />
-                      </div>
-                      <div className="space-y-2">
-                        <label htmlFor="lastName" className="text-sm font-medium">Last Name</label>
-                        <Input id="lastName" placeholder="Enter your last name" />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label htmlFor="email" className="text-sm font-medium">Email</label>
-                      <Input id="email" type="email" placeholder="your.email@university.edu" />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label htmlFor="university" className="text-sm font-medium">University/College</label>
-                      <Input id="university" placeholder="Enter your university or college" />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label htmlFor="interests" className="text-sm font-medium">Areas of Interest</label>
-                      <div className="flex flex-wrap gap-2">
-                        {["Technology", "Business", "Arts", "Science", "Engineering", "Humanities"].map((interest) => (
-                          <div key={interest} className="flex items-center">
-                            <input type="checkbox" id={interest} className="mr-2" />
-                            <label htmlFor={interest} className="text-sm">{interest}</label>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label htmlFor="dietaryRestrictions" className="text-sm font-medium">Dietary Restrictions</label>
-                      <Input id="dietaryRestrictions" placeholder="List any dietary restrictions" />
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <input type="checkbox" id="notifications" className="mr-2" />
-                      <label htmlFor="notifications" className="text-sm">
-                        I would like to receive email updates about this event
-                      </label>
-                    </div>
-                    
-                    <Button className="w-full">Register Now</Button>
-                  </form>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
             {/* Ticketing Tab */}
             <TabsContent value="ticketing" className="animate-fade-in">
               {/* Upcoming Events Section */}
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">Upcoming Events</h2>
+              <div className="mb-12 relative">
+                <button 
+                  className="absolute top-0 right-0 bg-white/80 hover:bg-white p-2 rounded-full shadow-md z-10"
+                  onClick={() => window.history.back()}
+                  aria-label="Close ticketing page"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                <h2 className="text-2xl font-bold mb-6">Upcoming Events</h2>
                 {loading ? (
                   <div className="text-center">
                     <Clock className="h-8 w-8 animate-spin" />
@@ -381,7 +225,7 @@ const Engagement = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold mb-4">₹1,200</div>
+                        <div className="text-3xl font-bold mb-4">₹499</div>
                         <ul className="space-y-2">
                           <li className="flex items-center text-sm">
                             <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
@@ -404,7 +248,7 @@ const Engagement = () => {
                       <CardFooter>
                         <Button 
                           className="w-full" 
-                          onClick={() => makePayment(1200, 'Premium')}
+                          onClick={() => makePayment(499, 'Premium')}
                           disabled={processingPayment}
                         >
                           {processingPayment ? (
@@ -413,7 +257,7 @@ const Engagement = () => {
                               Processing...
                             </div>
                           ) : (
-                            <div>Pay ₹1,200</div>
+                            <div>Pay ₹499</div>
                           )}
                         </Button>
                       </CardFooter>
@@ -428,7 +272,7 @@ const Engagement = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="text-3xl font-bold mb-4">₹2,500</div>
+                        <div className="text-3xl font-bold mb-4">₹999</div>
                         <ul className="space-y-2">
                           <li className="flex items-center text-sm">
                             <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
@@ -451,7 +295,7 @@ const Engagement = () => {
                       <CardFooter>
                         <Button 
                           className="w-full" 
-                          onClick={() => makePayment(2500, 'VIP')}
+                          onClick={() => makePayment(999, 'VIP')}
                           disabled={processingPayment}
                         >
                           {processingPayment ? (
@@ -460,7 +304,7 @@ const Engagement = () => {
                               Processing...
                             </div>
                           ) : (
-                            <div>Pay ₹2,500</div>
+                            <div>Pay ₹999</div>
                           )}
                         </Button>
                       </CardFooter>
@@ -585,6 +429,7 @@ const Engagement = () => {
             </button>
             <h2 className="text-2xl font-bold mb-4">{selectedEvent?.name}</h2>
             <p className="text-muted-foreground mb-6">{selectedEvent?.description}</p>
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card className="glass-card card-3d-effect border-0">
                 <div className="h-2 bg-blue-500"></div>
@@ -641,7 +486,7 @@ const Engagement = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold mb-4">₹1,200</div>
+                  <div className="text-3xl font-bold mb-4">₹499</div>
                   <ul className="space-y-2">
                     <li className="flex items-center text-sm">
                       <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
@@ -664,7 +509,7 @@ const Engagement = () => {
                 <CardFooter>
                   <Button 
                     className="w-full" 
-                    onClick={() => makePayment(1200, 'Premium')}
+                    onClick={() => makePayment(499, 'Premium')}
                     disabled={processingPayment}
                   >
                     {processingPayment ? (
@@ -673,7 +518,7 @@ const Engagement = () => {
                         Processing...
                       </div>
                     ) : (
-                      <div>Pay ₹1,200</div>
+                      <div>Pay ₹499</div>
                     )}
                   </Button>
                 </CardFooter>
@@ -688,7 +533,7 @@ const Engagement = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-3xl font-bold mb-4">₹2,500</div>
+                  <div className="text-3xl font-bold mb-4">₹999</div>
                   <ul className="space-y-2">
                     <li className="flex items-center text-sm">
                       <div className="w-5 h-5 rounded-full bg-green-500/20 text-green-500 flex items-center justify-center mr-2">✓</div>
@@ -711,7 +556,7 @@ const Engagement = () => {
                 <CardFooter>
                   <Button 
                     className="w-full" 
-                    onClick={() => makePayment(2500, 'VIP')}
+                    onClick={() => makePayment(999, 'VIP')}
                     disabled={processingPayment}
                   >
                     {processingPayment ? (
@@ -720,7 +565,7 @@ const Engagement = () => {
                         Processing...
                       </div>
                     ) : (
-                      <div>Pay ₹2,500</div>
+                      <div>Pay ₹999</div>
                     )}
                   </Button>
                 </CardFooter>
@@ -728,6 +573,21 @@ const Engagement = () => {
             </div>
           </div>
         </div>
+      )}
+      
+      {showPaymentModal && (
+        <PaymentModal 
+          isOpen={showPaymentModal}
+          amount={paymentAmount}
+          ticketType={paymentTicketType}
+          eventName={selectedEvent?.name || 'Campus Event'}
+          onClose={() => setShowPaymentModal(false)}
+          onPaymentComplete={() => {
+            setProcessingPayment(false);
+            setShowEventModal(false);
+            setShowPaymentModal(false);
+          }}
+        />
       )}
     </div>
   );

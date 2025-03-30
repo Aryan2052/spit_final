@@ -174,15 +174,17 @@ Be creative, specific, and focus on content that would drive engagement and atte
         break;
       case 'instagram':
         // Instagram doesn't have a direct sharing URL like WhatsApp or Facebook
-        // Usually requires the Instagram app API, but we'll open Instagram for now
+        navigator.clipboard.writeText(text + ' ' + url);
+        alert('Content copied to clipboard! Open Instagram to share.');
         shareUrl = 'https://www.instagram.com/';
-        alert('Copy this content to share on Instagram:\n\n' + text);
         break;
       default:
         shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
     }
     
-    window.open(shareUrl, '_blank', 'noopener,noreferrer');
+    if (shareUrl) {
+      window.open(shareUrl, '_blank', 'noopener,noreferrer');
+    }
   };
 
   // New component for AI Insights
