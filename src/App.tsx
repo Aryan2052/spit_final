@@ -13,6 +13,7 @@ import EventManagement from "./pages/EventManagement";
 import PRMarketing from "./pages/PRMarketing";
 import Engagement from "./pages/Engagement";
 import Analytics from "./pages/Analytics";
+import BudgetOptimization from "./pages/BudgetOptimization";
 import Login from "./pages/auth/login";
 import Signup from "./pages/auth/signup";
 import Profile from "./pages/profile";
@@ -49,6 +50,10 @@ const App = () => {
                 <Route
                   path="/analytics"
                   element={<ProtectedRoute><Analytics /></ProtectedRoute>}
+                />
+                <Route
+                  path="/budget-optimization"
+                  element={<ProtectedRoute><BudgetOptimization /></ProtectedRoute>}
                 />
                 <Route
                   path="/management"
