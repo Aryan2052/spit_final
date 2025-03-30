@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import FeedbackForm from "../components/FeedbackForm";
-import ApplicationForm from "../components/ApplicationForm";
 import { Calendar, MapPin, User } from 'lucide-react';
+import { Link } from "react-router-dom";
 
 type EventProps = {
   eventId: string;
@@ -23,7 +23,6 @@ const Events: React.FC<EventProps> = ({
   organizer 
 }) => {
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
-  const [showApplicationForm, setShowApplicationForm] = useState(false);
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6 border border-gray-200">
@@ -53,12 +52,12 @@ const Events: React.FC<EventProps> = ({
       </div>
 
       <div className="flex space-x-3">
-        <button
-          onClick={() => setShowApplicationForm(true)}
+        <Link
+          to={`/event/${eventId}`}
           className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition duration-300"
         >
-          Apply
-        </button>
+          View Details
+        </Link>
         
         <button
           onClick={() => setShowFeedbackForm(!showFeedbackForm)}
@@ -71,18 +70,6 @@ const Events: React.FC<EventProps> = ({
       {showFeedbackForm && (
         <div className="mt-4">
           <FeedbackForm eventId={eventId} />
-        </div>
-      )}
-      
-      {showApplicationForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="max-w-md w-full">
-            <ApplicationForm 
-              eventId={eventId} 
-              eventName={name} 
-              onClose={() => setShowApplicationForm(false)} 
-            />
-          </div>
         </div>
       )}
     </div>

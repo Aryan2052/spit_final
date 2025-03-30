@@ -1,12 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X, User } from 'lucide-react';
+import { Menu, X, User, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+
+interface RegisteredEvent {
+  _id: string;
+  name: string;
+  date?: string;
+  location: string;
+}
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, logout, user } = useAuth();
+  const [registeredEvents, setRegisteredEvents] = useState<RegisteredEvent[]>([]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -20,6 +37,34 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    // Load registered events from localStorage when user is authenticated
+    if (isAuthenticated) {
+      loadRegisteredEvents();
+    }
+    
+    // Listen for registration events
+    const handleEventRegistered = (e: CustomEvent) => {
+      loadRegisteredEvents();
+    };
+    
+    window.addEventListener('eventRegistered', handleEventRegistered as EventListener);
+    
+    return () => {
+      window.removeEventListener('eventRegistered', handleEventRegistered as EventListener);
+    };
+  }, [isAuthenticated]);
+
+  const loadRegisteredEvents = () => {
+    try {
+      const events = JSON.parse(localStorage.getItem('registeredEvents') || '[]');
+      setRegisteredEvents(events);
+    } catch (error) {
+      console.error('Error loading registered events:', error);
+      setRegisteredEvents([]);
+    }
+  };
 
   return (
     <header 
@@ -53,6 +98,42 @@ const Navbar = () => {
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
+                {/* Registered Events Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="relative inline-flex items-center justify-center">
+                      <Calendar size={18} className="text-foreground/80" />
+                      {registeredEvents.length > 0 && (
+                        <Badge className="absolute -top-2 -right-2 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
+                          {registeredEvents.length}
+                        </Badge>
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>My Registered Events</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {registeredEvents.length === 0 ? (
+                      <DropdownMenuItem disabled>
+                        <span className="text-sm text-muted-foreground">No registered events</span>
+                      </DropdownMenuItem>
+                    ) : (
+                      registeredEvents.map(event => (
+                        <DropdownMenuItem key={event._id} asChild>
+                          <Link to={`/event/${event._id}`} className="cursor-pointer">
+                            <div className="flex flex-col">
+                              <span className="font-medium">{event.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {event.date || 'Date TBD'}
+                              </span>
+                            </div>
+                          </Link>
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Link to="/profile" className="flex items-center space-x-2 hover:text-foreground transition-colors duration-200">
                   <User size={18} className="text-foreground/80" />
                   <span className="text-foreground/80">{user?.username || 'User'}</span>
@@ -97,33 +178,55 @@ const Navbar = () => {
                 <Link to="/pr-marketing" className="nav-link py-2">PR & Marketing</Link>
                 <Link to="/engagement" className="nav-link py-2">Engagement</Link>
                 <Link to="/analytics" className="nav-link py-2">Analytics</Link>
+                
+                {/* Mobile Registered Events */}
+                <div className="py-2">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Calendar size={16} />
+                    <span className="font-medium">My Registered Events</span>
+                    {registeredEvents.length > 0 && (
+                      <Badge>{registeredEvents.length}</Badge>
+                    )}
+                  </div>
+                  
+                  {registeredEvents.length === 0 ? (
+                    <p className="text-sm text-muted-foreground pl-6">No registered events</p>
+                  ) : (
+                    <div className="space-y-2 pl-6">
+                      {registeredEvents.map(event => (
+                        <Link 
+                          key={event._id} 
+                          to={`/event/${event._id}`}
+                          className="block text-sm hover:text-primary transition-colors"
+                        >
+                          {event.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </>
             )}
-            <div className="flex flex-col space-y-3 pt-4 border-t border-border">
-              {isAuthenticated ? (
-                <>
-                  <Link to="/profile" className="flex items-center space-x-2 py-2 text-foreground/80 hover:text-foreground transition-colors duration-200">
-                    <User size={18} className="text-foreground/80" />
-                    <span>{user?.username || 'User'}</span>
-                  </Link>
-                  <button
-                    onClick={logout}
-                    className="text-foreground/80 hover:text-foreground transition-colors duration-200 py-2"
-                  >
-                    Log out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link to="/auth/login" className="text-foreground/80 hover:text-foreground transition-colors duration-200 py-2">
-                    Log in
-                  </Link>
-                  <Link to="/auth/signup" className="btn-primary text-center">
-                    Get Started
-                  </Link>
-                </>
-              )}
-            </div>
+            
+            {isAuthenticated ? (
+              <>
+                <Link to="/profile" className="nav-link py-2 flex items-center">
+                  <User size={16} className="mr-2" />
+                  {user?.username || 'Profile'}
+                </Link>
+                <button
+                  onClick={logout}
+                  className="nav-link py-2 text-left"
+                >
+                  Log out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/auth/login" className="nav-link py-2">Log in</Link>
+                <Link to="/auth/signup" className="btn-primary py-2 text-center">Get Started</Link>
+              </>
+            )}
           </nav>
         </div>
       )}

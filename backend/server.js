@@ -8,6 +8,7 @@ const socialMediaRoutes = require("./routes/socialmediaRoutes");
 const feedbackRoutes = require("./routes/feedbackRoutes");
 const messageRoutes = require("./routes/messageRoutes"); // Import message routes
 const geminiRoutes = require("./routes/geminiRoutes"); // Import Gemini routes
+const registrationRoutes = require("./routes/registrationRoutes"); // Import registration routes
 dotenv.config();
 connectDB();
 
@@ -22,5 +23,6 @@ app.use("/api/social-media", socialMediaRoutes);
 app.use("/api/feedback", feedbackRoutes);
 app.use("/api/messages", messageRoutes); // Add message routes
 app.use("/api/gemini", geminiRoutes); // Add Gemini routes
+app.use("/api/registrations", registrationRoutes); // Add registration routes
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

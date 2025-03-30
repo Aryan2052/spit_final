@@ -5,6 +5,7 @@ interface User {
   id: string;
   username: string;
   email: string;
+  token?: string;
 }
 
 interface AuthContextType {
@@ -15,7 +16,13 @@ interface AuthContextType {
   fetchUserData: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  user: null,
+  login: () => {},
+  logout: () => {},
+  fetchUserData: async () => {}
+});
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -38,7 +45,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         try {
-          setUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          // Add token to user object
+          setUser({ ...parsedUser, token });
         } catch (error) {
           console.error('Error parsing user data:', error);
           // If there's an error parsing, fetch fresh data
@@ -70,7 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userWithAllFields = {
           id: userData.id || userData._id,
           username: userData.username || '',
-          email: userData.email || ''
+          email: userData.email || '',
+          token: token // Add token to user object
         };
         
         setUser(userWithAllFields);
@@ -86,9 +96,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = (token: string, userData: User) => {
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(userData));
+    // Add token to user data before storing
+    const userWithToken = { ...userData, token };
+    localStorage.setItem('user', JSON.stringify(userWithToken));
     setIsAuthenticated(true);
-    setUser(userData);
+    setUser(userWithToken);
   };
 
   const logout = () => {
