@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -74,9 +73,6 @@ const Hero = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/signup" className="btn-primary">
               Get Started
-            </Link>
-            <Link to="/demo" className="px-6 py-3 rounded-full border border-border hover:border-primary/50 transition-colors duration-300">
-              View Demo
             </Link>
           </div>
         </div>
