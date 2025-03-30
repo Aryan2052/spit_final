@@ -15,6 +15,7 @@ import Engagement from "./pages/Engagement";
 import Analytics from "./pages/Analytics";
 import Login from "./pages/auth/login";
 import Signup from "./pages/auth/signup";
+import Profile from "./pages/profile";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,10 @@ const App = () => {
                 <Route
                   path="/management"
                   element={<ProtectedRoute><EventManagement /></ProtectedRoute>}
+                />
+                <Route
+                  path="/profile"
+                  element={<ProtectedRoute><Profile /></ProtectedRoute>}
                 />
 
                 {/* Public Routes */}

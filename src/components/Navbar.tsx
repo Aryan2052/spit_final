@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -52,12 +52,18 @@ const Navbar = () => {
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             {isAuthenticated ? (
-              <button
-                onClick={logout}
-                className="text-foreground/80 hover:text-foreground transition-colors duration-200"
-              >
-                Log out
-              </button>
+              <div className="flex items-center space-x-4">
+                <Link to="/profile" className="flex items-center space-x-2 hover:text-foreground transition-colors duration-200">
+                  <User size={18} className="text-foreground/80" />
+                  <span className="text-foreground/80">{user?.username || 'User'}</span>
+                </Link>
+                <button
+                  onClick={logout}
+                  className="text-foreground/80 hover:text-foreground transition-colors duration-200"
+                >
+                  Log out
+                </button>
+              </div>
             ) : (
               <>
                 <Link to="/auth/login" className="text-foreground/80 hover:text-foreground transition-colors duration-200">
@@ -95,12 +101,18 @@ const Navbar = () => {
             )}
             <div className="flex flex-col space-y-3 pt-4 border-t border-border">
               {isAuthenticated ? (
-                <button
-                  onClick={logout}
-                  className="text-foreground/80 hover:text-foreground transition-colors duration-200 py-2"
-                >
-                  Log out
-                </button>
+                <>
+                  <Link to="/profile" className="flex items-center space-x-2 py-2 text-foreground/80 hover:text-foreground transition-colors duration-200">
+                    <User size={18} className="text-foreground/80" />
+                    <span>{user?.username || 'User'}</span>
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="text-foreground/80 hover:text-foreground transition-colors duration-200 py-2"
+                  >
+                    Log out
+                  </button>
+                </>
               ) : (
                 <>
                   <Link to="/auth/login" className="text-foreground/80 hover:text-foreground transition-colors duration-200 py-2">

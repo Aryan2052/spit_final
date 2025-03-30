@@ -26,7 +26,11 @@ const Signup = () => {
       const data = await response.json();
 
       if (response.ok) {
-        login(data.token);
+        login(data.token, {
+          id: data.user.id,
+          username: data.user.username,
+          email: data.user.email
+        });
         navigate("/");
       } else {
         setError(data.message || "Signup failed. Try again.");
@@ -55,7 +59,7 @@ const Signup = () => {
           />
           <InputField
             type="email"
-            placeholder="E-mail"
+            placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             icon={<FaEnvelope />}
@@ -68,14 +72,14 @@ const Signup = () => {
             icon={<FaLock />}
           />
           <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded">
-            Create →
+            Create account →
           </button>
         </form>
 
         <p className="mt-4 text-sm text-gray-600">
           Already have an account?{" "}
           <Link to="/auth/login" className="text-blue-500 hover:underline">
-            Login here
+            Log in
           </Link>
         </p>
       </div>

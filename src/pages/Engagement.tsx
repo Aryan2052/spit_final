@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -20,6 +19,7 @@ import {
   Send,
   Search
 } from 'lucide-react';
+import DiscussionForum from '@/components/DiscussionForum';
 
 const Engagement = () => {
   const [activeTab, setActiveTab] = useState("registration");
@@ -326,66 +326,7 @@ const Engagement = () => {
               </div>
               
               <div className="mt-12">
-                <Card className="glass-card card-3d-effect border-0">
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <MessageSquare className="mr-2 h-5 w-5" />
-                      Event Chat
-                    </CardTitle>
-                    <CardDescription>
-                      Connect with other attendees and ask questions
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-background/80 rounded-lg p-4 h-64 mb-4 overflow-y-auto">
-                      <div className="space-y-4">
-                        <div className="flex items-start space-x-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback>MJ</AvatarFallback>
-                          </Avatar>
-                          <div className="bg-primary/10 p-3 rounded-lg rounded-tl-none">
-                            <p className="text-sm font-medium">Morgan J.</p>
-                            <p className="text-sm">Hi everyone! Excited for the tech panel at 2PM. Anyone else going?</p>
-                            <p className="text-xs text-muted-foreground mt-1">10:30 AM</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-start space-x-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback>TS</AvatarFallback>
-                          </Avatar>
-                          <div className="bg-primary/10 p-3 rounded-lg rounded-tl-none">
-                            <p className="text-sm font-medium">Taylor S.</p>
-                            <p className="text-sm">I'll be there! Does anyone know if they'll be discussing AR applications?</p>
-                            <p className="text-xs text-muted-foreground mt-1">10:32 AM</p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-start space-x-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback>AJ</AvatarFallback>
-                          </Avatar>
-                          <div className="bg-primary/10 p-3 rounded-lg rounded-tl-none">
-                            <p className="text-sm font-medium">Alex J.</p>
-                            <p className="text-sm">Yes, AR is on the agenda! Looking forward to meeting everyone there.</p>
-                            <p className="text-xs text-muted-foreground mt-1">10:35 AM</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      <Input 
-                        placeholder="Type your message..." 
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                      />
-                      <Button size="icon">
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                <DiscussionForum />
               </div>
             </TabsContent>
           </Tabs>
