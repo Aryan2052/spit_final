@@ -14,6 +14,55 @@ const VideoGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
+  const [usedFallback, setUsedFallback] = useState(false);
+
+  // Function to query the Hugging Face API for text-to-video generation
+  const generateVideoWithHuggingFace = async (prompt: string) => {
+    try {
+      const HF_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY;
+      
+      if (!HF_API_KEY) {
+        throw new Error("Hugging Face API key is missing");
+      }
+      
+      const client = new InferenceClient(HF_API_KEY);
+      
+      // Use the Wan-AI/Wan2.1-T2V-14B model for text-to-video generation
+      const videoBlob = await client.textToVideo({
+        provider: "replicate",
+        model: "Wan-AI/Wan2.1-T2V-14B",
+        inputs: prompt,
+      });
+      
+      // Create a URL for the video blob
+      return URL.createObjectURL(videoBlob);
+    } catch (error) {
+      console.error("Error calling Hugging Face API for video generation:", error);
+      throw error;
+    }
+  };
+
+  // Function to generate a fallback video when API fails
+  const generateFallbackVideo = (prompt: string) => {
+    // Fallback videos - using these directly due to API credit limits
+    const fallbackVideos = [
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+      'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    ];
+    
+    // Use the prompt string to deterministically select a video
+    const promptSum = prompt.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const videoIndex = promptSum % fallbackVideos.length;
+    return fallbackVideos[videoIndex];
+  };
 
   const handleGenerateVideo = async () => {
     if (!prompt.trim()) {
@@ -24,41 +73,34 @@ const VideoGenerator = () => {
     try {
       setIsGenerating(true);
       setError(null);
+      setUsedFallback(false);
       
-      // Fallback videos - using these directly due to API credit limits
-      const fallbackVideos = [
-        'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-        'https://storage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-        'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-        'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-        'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-        'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-        'https://storage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-        'https://storage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
-        'https://storage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
-        'https://storage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-      ];
+      let videoUrl;
       
-      // Use the prompt string to deterministically select a video
-      const promptSum = prompt.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-      const videoIndex = promptSum % fallbackVideos.length;
-      const fallbackVideoUrl = fallbackVideos[videoIndex];
+      try {
+        // Try to use the Hugging Face API first
+        videoUrl = await generateVideoWithHuggingFace(prompt);
+      } catch (apiError) {
+        console.warn("Falling back to sample videos due to API error:", apiError);
+        // If the API fails, use the fallback method
+        videoUrl = generateFallbackVideo(prompt);
+        setUsedFallback(true);
+      }
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      setGeneratedVideoUrl(videoUrl);
       
-      setGeneratedVideoUrl(fallbackVideoUrl);
-      
-      // Update the context with the fallback video
+      // Update the context with the generated video
       updateVideoGenerationState({
-        videoUrl: fallbackVideoUrl,
+        videoUrl,
         prompt,
         isLoading: false,
         error: null
       });
       
-      // Show a notice about using demo mode
-      setError(`Note: Using demo mode with sample videos. Each prompt will generate a different video based on your input.`);
+      // Show a notice if we used the fallback
+      if (usedFallback) {
+        setError(`Note: Using demo mode with sample videos due to API limitations. Each prompt will generate a different video based on your input.`);
+      }
       
     } catch (err) {
       console.error('Error generating video:', err);
@@ -112,38 +154,29 @@ const VideoGenerator = () => {
             >
               Your browser does not support the video tag.
             </video>
+            {usedFallback && (
+              <p className="text-xs text-muted-foreground mt-2">
+                This is a sample video. For custom AI-generated videos, please check your API key or try again later.
+              </p>
+            )}
           </div>
         )}
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={() => {
-            setPrompt('');
-            setGeneratedVideoUrl(null);
-            setError(null);
-            updateVideoGenerationState({
-              videoUrl: null,
-              prompt: '',
-              error: null
-            });
-          }}
-          disabled={isGenerating}
-        >
-          Clear
-        </Button>
+        
         <Button 
-          onClick={handleGenerateVideo}
+          onClick={handleGenerateVideo} 
           disabled={isGenerating || !prompt.trim()}
+          className="w-full"
         >
           {isGenerating ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Generating...
             </>
-          ) : 'Generate Video'}
+          ) : (
+            'Generate Video'
+          )}
         </Button>
-      </CardFooter>
+      </CardContent>
     </Card>
   );
 };
