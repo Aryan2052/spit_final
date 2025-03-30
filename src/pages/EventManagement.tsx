@@ -395,7 +395,7 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
         <Tabs defaultValue="planning" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="planning">Event Planning</TabsTrigger>
-            <TabsTrigger value="past">Past Events</TabsTrigger>
+            <TabsTrigger value="add">Add Events</TabsTrigger>
           </TabsList>
 
           <TabsContent value="planning">
@@ -465,10 +465,10 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
             </Card>
           </TabsContent>
 
-          <TabsContent value="past">
+          <TabsContent value="add">
             <Card>
               <CardHeader>
-                <CardTitle>Past Events</CardTitle>
+                <CardTitle>Add Events</CardTitle>
                 <CardDescription>
                   Add and view past events
                 </CardDescription>
