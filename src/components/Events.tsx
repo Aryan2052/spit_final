@@ -39,7 +39,11 @@ const Events: React.FC<EventProps> = ({
       <div className="space-y-2 mb-4">
         <div className="flex items-center text-sm text-gray-500">
           <Calendar className="w-4 h-4 mr-2" />
-          <span>{date}</span>
+          <span>{new Date(date).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          })}</span>
         </div>
         <div className="flex items-center text-sm text-gray-500">
           <MapPin className="w-4 h-4 mr-2" />

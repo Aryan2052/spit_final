@@ -22,10 +22,15 @@ import { Button } from "@/components/ui/button";
 
 type FormData = {
   eventName: string;
+  eventTheme: string;
+  budget: string;
+  location: string;
   prTasks: string;
   techTasks: string;
   logisticsTasks: string;
   creativesTasks: string;
+  speakerRecommendations: boolean;
+  judgeRecommendations: boolean;
 };
 
 type PastEventData = {
@@ -36,6 +41,7 @@ type PastEventData = {
   location: string;
   image: string;
   organizer: string;
+  category?: string;
 };
 
 type AIGeneratedTask = {
@@ -548,6 +554,19 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
                       disabled={isLoading}
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Category *</label>
+                    <select
+                      {...register("category", { required: "Category is required" })}
+                      className="w-full p-2 border rounded-lg"
+                      disabled={isLoading}
+                    >
+                      <option value="">Select a category</option>
+                      <option value="sports">Sports</option>
+                      <option value="tech">Tech</option>
+                      <option value="cultural">Cultural</option>
+                    </select>
+                  </div>
                   <button
                     type="submit"
                     className="w-full bg-primary text-white py-2 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -600,6 +619,10 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
                             <div className="flex items-center gap-2 text-sm text-gray-500">
                               <MapPin className="w-4 h-4" />
                               <span>{event.location}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <AlertTriangle className="w-4 h-4" />
+                              <span>{event.category}</span>
                             </div>
                           </div>
                         </div>
