@@ -120,7 +120,11 @@ const Index = () => {
                   filteredEvents.map((event) => (
                     <div
                       key={event._id}
-                      className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col"
+                      className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col cursor-pointer"
+                      onClick={() => {
+                        // Navigate to event info page
+                        window.location.href = `/event/${event._id}`;
+                      }}
                     >
                       <div className="aspect-video w-full overflow-hidden">
                         <img
@@ -171,7 +175,10 @@ const Index = () => {
                           </div>
                           <div className="mt-4 pt-2 border-t flex justify-between">
                             <button
-                              onClick={() => setSelectedEventId(event._id)}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent card click
+                                setSelectedEventId(event._id);
+                              }}
                               className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
                             >
                               <MessageSquare className="w-4 h-4" />
@@ -179,7 +186,10 @@ const Index = () => {
                             </button>
                             
                             <button
-                              onClick={() => setSelectedEventForApplication(event)}
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent card click
+                                setSelectedEventForApplication(event);
+                              }}
                               className="inline-flex items-center gap-2 text-green-600 hover:text-green-700 transition-colors"
                             >
                               <UserPlus className="w-4 h-4" />

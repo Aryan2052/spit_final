@@ -16,6 +16,7 @@ import Analytics from "./pages/Analytics";
 import Login from "./pages/auth/login";
 import Signup from "./pages/auth/signup";
 import Profile from "./pages/profile";
+import EventInfo from "./pages/EventInfo";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => {
               <Sonner />
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/event/:id" element={<EventInfo />} />
 
                 {/* Protected Routes */}
                 <Route
