@@ -56,11 +56,13 @@ const Index = () => {
   }, []);
 
   const filteredEvents = events.filter((event) => {
+    if (!event) return false;
+    
     // Filter by search term
     const matchesSearch = 
-      event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.location?.toLowerCase().includes(searchTerm.toLowerCase());
+      (event.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (event.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (event.location?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     
     // Filter by category if one is selected (but not 'all')
     const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;

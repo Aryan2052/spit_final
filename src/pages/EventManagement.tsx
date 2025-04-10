@@ -232,11 +232,15 @@ Event Management Team
     }
   };
 
-  const filteredEvents = pastEvents.filter(event => 
-    event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    event.location.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEvents = pastEvents.filter(event => {
+    if (!event) return false;
+    
+    return (
+      (event.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (event.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (event.location?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    );
+  });
 
   const extractTasksManually = (response: string): AIGeneratedTask[] => {
     const taskDescriptions = response.split('\n')
