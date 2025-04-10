@@ -77,19 +77,6 @@ const Hero = () => {
           </div>
         </div>
       </div>
-
-      {/* 3D mockup image */}
-      <div className="mt-12 perspective-container mx-auto max-w-6xl px-4">
-        <div className="relative rounded-xl overflow-hidden shadow-3d transition-all duration-500 hover:shadow-lg transform-gpu hover:-translate-y-2">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent z-10 pointer-events-none"></div>
-          <img 
-            src="https://framerusercontent.com/images/U3LJetyDmJm5gw1ZOxzKJ7XlJtw.jpg" 
-            alt="Dashboard preview" 
-            className="w-full h-auto rounded-xl transform transition-transform duration-500"
-            loading="lazy"
-          />
-        </div>
-      </div>
     </div>
   );
 };
