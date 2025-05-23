@@ -2,6 +2,9 @@
 
 CampusEvents is a comprehensive event management platform designed to streamline the entire event planning and execution process. From event creation and management to PR marketing, audience engagement, analytics, and budget optimization, CampusEvents provides all the tools event organizers need in one place.
 
+https://youtu.be/d5bNXB_Cshs
+you can view the demo of the website on the above video.
+
 ## Features
 
 ### Event Management
