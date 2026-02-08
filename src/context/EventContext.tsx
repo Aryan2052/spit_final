@@ -139,24 +139,23 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const generateVideo = async (prompt: string) => {
     try {
       updateVideoGenerationState({ isLoading: true, error: null, prompt });
-      
+
       // This would be implemented with actual API call in a real application
       // For now, we'll simulate the API call with a timeout
-      // In a real implementation, you would use the InferenceClient from Hugging Face
-      
+
       // Simulating API call delay
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Mock success response
-      updateVideoGenerationState({ 
-        isLoading: false, 
-        videoUrl: 'https://example.com/generated-video.mp4' 
+      updateVideoGenerationState({
+        isLoading: false,
+        videoUrl: 'https://example.com/generated-video.mp4'
       });
     } catch (error) {
       console.error('Error generating video:', error);
-      updateVideoGenerationState({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : 'Failed to generate video' 
+      updateVideoGenerationState({
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to generate video'
       });
     }
   };
@@ -164,30 +163,30 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const generateImage = async (prompt: string) => {
     try {
       updateImageGenerationState({ isLoading: true, error: null, prompt });
-      
+
       // This would be implemented with actual API call in a real application
       // For now, we'll simulate the API call with a timeout
-      
+
       // Simulating API call delay
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       // Mock success response
-      updateImageGenerationState({ 
-        isLoading: false, 
-        imageUrl: 'https://example.com/generated-image.jpg' 
+      updateImageGenerationState({
+        isLoading: false,
+        imageUrl: 'https://example.com/generated-image.jpg'
       });
     } catch (error) {
       console.error('Error generating image:', error);
-      updateImageGenerationState({ 
-        isLoading: false, 
-        error: error instanceof Error ? error.message : 'Failed to generate image' 
+      updateImageGenerationState({
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to generate image'
       });
     }
   };
 
   return (
-    <EventContext.Provider value={{ 
-      latestEventAnalysis, 
+    <EventContext.Provider value={{
+      latestEventAnalysis,
       updateEventAnalysis,
       sentimentAnalysis,
       updateSentimentAnalysis,

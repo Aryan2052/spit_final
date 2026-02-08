@@ -5,19 +5,21 @@ import Footer from '../components/Footer';
 import EventManagementForm from '../components/EventManagementForm';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { 
-  Zap, 
-  Clock, 
-  Users, 
-  FileText, 
+import {
+  Zap,
+  Clock,
+  Users,
+  FileText,
   AlertTriangle,
   Calendar,
   MapPin,
-  Mail, 
-  Send
+  Mail,
+  Send,
+  QrCode
 } from 'lucide-react';
-import { toast, Toaster } from "react-hot-toast"; 
+import { toast, Toaster } from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 
 type FormData = {
@@ -70,6 +72,8 @@ const EventManagement = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState("pr");
   const [searchTerm, setSearchTerm] = useState("");
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [qrEvent, setQrEvent] = useState<PastEventData | null>(null);
 
   const { register, handleSubmit, reset } = useForm<PastEventData>();
 
@@ -86,7 +90,7 @@ const EventManagement = () => {
   const formatEmailContent = (teamType: string, tasks: AIGeneratedTask[]) => {
     const date = new Date().toLocaleDateString();
     const subject = `[${formData?.eventName || 'Event'}] Tasks for ${teamType.toUpperCase()} Team - ${date}`;
-    
+
     let body = `
 Dear ${teamType.charAt(0).toUpperCase() + teamType.slice(1)} Team,
 
@@ -113,23 +117,23 @@ Event Management Team
     try {
       setIsLoading(true);
       const tasks = aiGeneratedTasks[teamType as keyof typeof aiGeneratedTasks] || [];
-      
+
       if (tasks.length === 0) {
         toast.error(`No tasks available for ${teamType} team`);
         return;
       }
-      
+
       const teamEmail = teamEmails.find(t => t.team === teamType)?.email;
       if (!teamEmail) {
         toast.error(`Email address not found for ${teamType} team`);
         return;
       }
-      
+
       const { subject, body } = formatEmailContent(teamType, tasks);
-      
+
       // In a real application, you would send this via your backend API
       // For now, we'll simulate sending and show a success message
-      
+
       // Example of how you would call your backend API:
       /*
       const response = await fetch('http://localhost:5000/api/send-email', {
@@ -150,13 +154,13 @@ Event Management Team
         throw new Error('Failed to send email');
       }
       */
-      
+
       // For demonstration, we'll just log the email content and show a success message
       console.log('Email Content:', { to: teamEmail, subject, body });
-      
+
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       toast.success(`Email sent to ${teamType} team at ${teamEmail}`);
     } catch (error) {
       console.error(`Error sending email to ${teamType} team:`, error);
@@ -220,7 +224,7 @@ Event Management Team
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to add event');
       }
-      
+
       reset();
       fetchPastEvents();
       setError(null);
@@ -234,7 +238,7 @@ Event Management Team
 
   const filteredEvents = pastEvents.filter(event => {
     if (!event) return false;
-    
+
     return (
       (event.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
       (event.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -244,9 +248,9 @@ Event Management Team
 
   const extractTasksManually = (response: string): AIGeneratedTask[] => {
     const taskDescriptions = response.split('\n')
-      .filter(line => 
-        line.trim().length > 0 && 
-        !line.includes('```') && 
+      .filter(line =>
+        line.trim().length > 0 &&
+        !line.includes('```') &&
         !line.toLowerCase().includes('json')
       )
       .slice(0, 5); // Limit to 5 tasks
@@ -341,6 +345,11 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
     generateAITasks('creatives', data.creativesTasks);
   };
 
+  const handleShowQr = (event: PastEventData) => {
+    setQrEvent(event);
+    setQrDialogOpen(true);
+  };
+
   const renderTeamTasks = (teamType: keyof typeof aiGeneratedTasks) => {
     const tasks = aiGeneratedTasks[teamType] || [];
 
@@ -348,9 +357,9 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
       <div className="space-y-4">
         {tasks.length > 0 && (
           <div className="flex justify-end mb-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => sendTeamEmail(teamType)}
               disabled={isLoading}
               className="flex items-center gap-2"
@@ -417,7 +426,7 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <EventManagementForm 
+                <EventManagementForm
                   onSubmit={onSubmit}
                   isLoading={isLoading}
                   pastEvents={pastEvents}
@@ -428,7 +437,7 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
                 {Object.keys(aiGeneratedTasks).length > 0 && (
                   <div className="max-w-4xl mx-auto mt-12">
                     <div className="flex justify-end mb-4">
-                      <Button 
+                      <Button
                         onClick={sendAllTeamEmails}
                         disabled={isLoading}
                         className="flex items-center gap-2"
@@ -437,8 +446,8 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
                         Send Tasks to All Teams
                       </Button>
                     </div>
-                    <Tabs 
-                      value={selectedTab} 
+                    <Tabs
+                      value={selectedTab}
                       onValueChange={setSelectedTab}
                       className="w-full"
                     >
@@ -533,7 +542,7 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
                   <div>
                     <label className="block text-sm font-medium mb-1">Image URL *</label>
                     <input
-                      {...register("image", { 
+                      {...register("image", {
                         required: "Image URL is required",
                         pattern: {
                           value: /(http(s?):)([/|.|\w|\s|-])*\.(?:jpg|gif|png|jpeg)/,
@@ -606,8 +615,8 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
                         <div key={index} className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
                           {event.image && (
                             <div className="aspect-video w-full overflow-hidden">
-                              <img 
-                                src={event.image} 
+                              <img
+                                src={event.image}
                                 alt={event.name}
                                 className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-300"
                               />
@@ -628,6 +637,15 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
                               <AlertTriangle className="w-4 h-4" />
                               <span>{event.category}</span>
                             </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full mt-2"
+                              onClick={() => handleShowQr(event)}
+                            >
+                              <QrCode className="w-4 h-4 mr-2" />
+                              View QR Code
+                            </Button>
                           </div>
                         </div>
                       ))
@@ -640,6 +658,69 @@ Generate 3-5 additional tasks that complement the existing tasks and ensure even
         </Tabs>
       </div>
       <Footer />
+
+      {qrEvent && (
+        <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+          <DialogContent className="sm:max-w-sm p-0 overflow-hidden bg-white border-0 shadow-2xl rounded-2xl">
+            <div className="relative h-48 w-full bg-gray-100">
+              {qrEvent.image ? (
+                <img
+                  src={qrEvent.image}
+                  alt={qrEvent.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = '/placeholder-event.svg';
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                  <Calendar className="h-16 w-16 text-white/50" />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+              <div className="absolute bottom-4 left-4 right-4 text-white">
+                <div className="mb-2">
+                  <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-semibold px-2 py-1 rounded">
+                    {qrEvent.category ? (qrEvent.category.charAt(0).toUpperCase() + qrEvent.category.slice(1)) : 'Event'}
+                  </span>
+                </div>
+                <h3 className="text-xl font-bold leading-tight shadow-sm text-white">{qrEvent.name}</h3>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span>{new Date(qrEvent.date).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <MapPin className="w-4 h-4 text-red-500 shrink-0" />
+                  <span className="line-clamp-1">{qrEvent.location}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <Users className="w-4 h-4 text-purple-600 shrink-0" />
+                  <span>by {qrEvent.organizer}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center justify-center bg-gray-50 p-6 rounded-xl border border-gray-100 mb-2">
+                <div className="bg-white p-2 rounded-lg shadow-sm mb-3">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(`${window.location.origin}/event/${qrEvent._id}`)}`}
+                    alt={`QR Code for ${qrEvent.name}`}
+                    className="w-40 h-40 mix-blend-multiply"
+                  />
+                </div>
+                <p className="text-xs text-center text-gray-500 font-medium uppercase tracking-wide">
+                  Scan to View Details
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

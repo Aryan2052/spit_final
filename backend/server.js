@@ -1,5 +1,6 @@
-const express = require("express");
 const dotenv = require("dotenv");
+dotenv.config();
+const express = require("express");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const eventRoutes = require("./routes/eventRoutes");
@@ -11,8 +12,8 @@ const geminiRoutes = require("./routes/geminiRoutes");
 const registrationRoutes = require("./routes/registrationRoutes");
 const gamificationRoutes = require("./routes/gamificationRoutes");
 const challengeRoutes = require("./routes/challengeRoutes");
+const stableDiffusionRoutes = require("./routes/stableDiffusionRoutes");
 const path = require("path");
-dotenv.config();
 connectDB();
 
 const app = express();
@@ -39,6 +40,8 @@ app.use("/api/gemini", geminiRoutes);
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/gamification", gamificationRoutes);
 app.use("/api/challenges", challengeRoutes);
+app.use("/api/stable-diffusion", stableDiffusionRoutes);
+app.use("/api/email", require("./routes/emailRoutes"));
 
 // The "catch all" handler for any request that doesn't match one above
 app.get("*", (req, res) => {

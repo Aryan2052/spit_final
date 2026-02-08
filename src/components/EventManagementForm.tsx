@@ -9,6 +9,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Mail } from "lucide-react";
+
 type FormData = {
   eventName: string;
   eventTheme: string;
@@ -69,10 +79,48 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
   const [judgeResults, setJudgeResults] = useState<SpeakerJudgeData[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [recommendationError, setRecommendationError] = useState<string | null>(null);
+  // New generic email state
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailRecipients, setEmailRecipients] = useState('');
+  const [currentEmailTaskType, setCurrentEmailTaskType] = useState<'PR' | 'Tech' | 'Logistics' | 'Creatives' | ''>('');
 
   const eventTheme = watch("eventTheme");
   const budget = watch("budget");
   const location = watch("location");
+  const eventName = watch("eventName");
+  const prTasks = watch("prTasks");
+
+  // Watch other tasks
+  const techTasks = watch("techTasks");
+  const logisticsTasks = watch("logisticsTasks");
+  const creativesTasks = watch("creativesTasks");
+
+  const openEmailDialog = (type: 'PR' | 'Tech' | 'Logistics' | 'Creatives') => {
+    setCurrentEmailTaskType(type);
+    setEmailRecipients('');
+    setIsEmailDialogOpen(true);
+  };
+
+  const handleSendEmail = () => {
+    if (!emailRecipients || !currentEmailTaskType) return;
+
+    let taskContent = '';
+    switch (currentEmailTaskType) {
+      case 'PR': taskContent = prTasks; break;
+      case 'Tech': taskContent = techTasks; break;
+      case 'Logistics': taskContent = logisticsTasks; break;
+      case 'Creatives': taskContent = creativesTasks; break;
+    }
+
+    const subject = encodeURIComponent(`${currentEmailTaskType} Tasks for ${eventName}`);
+    const body = encodeURIComponent(`Here are the ${currentEmailTaskType} tasks for ${eventName}:\n\n${taskContent}`);
+
+    // Open default email client
+    window.location.href = `mailto:${emailRecipients}?subject=${subject}&body=${body}`;
+
+    setIsEmailDialogOpen(false);
+    setEmailRecipients('');
+  };
 
   useEffect(() => {
     if (selectedEvent) {
@@ -80,6 +128,8 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
       setValue("location", selectedEvent.location);
     }
   }, [selectedEvent, setValue]);
+
+
 
   // Parse location: "SPIT, Mumbai, India" or "Mumbai, India"
   const parseLocation = (locationString: string): { institution?: string, city?: string, country?: string } => {
@@ -94,10 +144,10 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
     try {
       const url = `https://api.openalex.org/institutions?search=${encodeURIComponent(city)}&filter=country_code:IN&per-page=100`;
       console.log(`🏛️ Finding institutions in ${city}...`);
-      
+
       const response = await fetch(url);
       const data = await response.json();
-      
+
       if (data.results && data.results.length > 0) {
         const institutionIds = data.results.map((inst: any) => inst.id);
         console.log(`✅ Found ${institutionIds.length} institutions in ${city}`);
@@ -116,10 +166,10 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
       console.log(`   ⚠️ No concepts available`);
       return true; // Include if no concepts (benefit of doubt)
     }
-    
+
     const themeLower = theme.toLowerCase();
     const topConcepts = concepts.slice(0, 20).map((c: any) => c.display_name.toLowerCase());
-    
+
     // Tech-related keywords (very broad)
     const techKeywords = [
       'computer', 'artificial intelligence', 'machine learning', 'deep learning',
@@ -131,17 +181,17 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
       'pattern recognition', 'optimization', 'automation', 'information system',
       'digital', 'analytics', 'engineering', 'science'
     ];
-    
+
     // Check if has ANY tech keyword
     const hasTechConcept = topConcepts.some(concept =>
       techKeywords.some(keyword => concept.includes(keyword))
     );
-    
+
     if (hasTechConcept) {
       console.log(`   ✓ Has tech concepts`);
       return true;
     }
-    
+
     // For AI/ML themes, be even more lenient
     if (themeLower.includes('ai') || themeLower.includes('ml') || themeLower.includes('machine learning')) {
       // Accept anyone with math, statistics, engineering
@@ -154,7 +204,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
         return true;
       }
     }
-    
+
     console.log(`   ⚠️ No relevant concepts found`);
     return false;
   };
@@ -166,10 +216,10 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
   ): Promise<SpeakerJudgeData[]> => {
     const results: SpeakerJudgeData[] = [];
     const seenIds = new Set<string>();
-    
+
     const themeLower = theme.toLowerCase();
     let searchQueries: string[] = [];
-    
+
     // SIMPLIFIED queries
     if (themeLower.includes('ai') || themeLower.includes('artificial intelligence')) {
       searchQueries = ['artificial intelligence', 'machine learning', 'computer science'];
@@ -184,25 +234,25 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
     } else {
       searchQueries = ['computer science'];
     }
-    
+
     console.log(`\n🔍 Searching ALL of India for ${theme}, then filtering for ${city}`);
     console.log(`📋 Will try ${searchQueries.length} queries`);
-    
+
     for (const query of searchQueries) {
       if (results.length >= 50) {
         console.log(`✅ Reached 50 results, stopping`);
         break;
       }
-      
+
       try {
         // SIMPLE SEARCH: Just search theme in India, NO city filter in query
         const url = `https://api.openalex.org/authors?search=${encodeURIComponent(query)}&filter=last_known_institutions.country_code:IN&per-page=200&sort=cited_by_count:desc`;
-        
+
         console.log(`\n🔍 Searching India for: "${query}"`);
-        
+
         const response = await fetch(url);
         const data = await response.json();
-        
+
         if (data.error) {
           console.error(`   ❌ API Error:`, data.error);
           continue;
@@ -214,40 +264,40 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
         }
 
         console.log(`   ✓ Got ${data.results.length} total results from India`);
-        
+
         let cityMatches = 0;
         let addedFromQuery = 0;
-        
+
         for (const author of data.results) {
           if (seenIds.has(author.id)) continue;
-          
+
           const authorInst = author.last_known_institutions?.[0];
           const authorCity = authorInst?.city || '';
           const affiliation = authorInst?.display_name || 'Unknown Institution';
-          
+
           // Check if from target city (CASE INSENSITIVE, PARTIAL MATCH)
           const cityLower = city.toLowerCase();
           const authorCityLower = authorCity.toLowerCase();
           const isFromCity = authorCityLower.includes(cityLower) || cityLower.includes(authorCityLower);
-          
+
           if (!isFromCity) {
             continue; // Skip if not from target city
           }
-          
+
           cityMatches++;
-          
+
           const concepts = author.x_concepts || [];
-          
+
           // VERY LENIENT relevance check
           if (!isRelevantExpert(concepts, theme)) {
             continue;
           }
-          
+
           seenIds.add(author.id);
-          
+
           const citations = author.cited_by_count || 0;
           const works = author.works_count || 0;
-          
+
           // Get tech concepts
           const techKeywords = [
             'computer', 'artificial intelligence', 'machine learning', 'deep learning',
@@ -257,21 +307,21 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
             'cloud computing', 'internet', 'web', 'networking', 'cybersecurity',
             'blockchain', 'internet of things', 'embedded system'
           ];
-          
+
           const techConcepts = concepts
-            .filter((c: any) => 
+            .filter((c: any) =>
               techKeywords.some(keyword => c.display_name.toLowerCase().includes(keyword))
             )
             .slice(0, 5)
             .map((c: any) => c.display_name);
-          
-          const expertise = techConcepts.length > 0 
-            ? techConcepts.join(', ') 
+
+          const expertise = techConcepts.length > 0
+            ? techConcepts.join(', ')
             : concepts.slice(0, 3).map((c: any) => c.display_name).join(', ');
 
           let relevanceScore = 100;
           const topConcepts = concepts.slice(0, 10).map((c: any) => c.display_name.toLowerCase());
-          
+
           // Theme boosts
           if (themeLower.includes('ai') && topConcepts.some(c => c.includes('artificial intelligence') || c.includes('machine learning'))) {
             relevanceScore += 300;
@@ -282,7 +332,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
           } else if (themeLower.includes('data') && topConcepts.some(c => c.includes('data'))) {
             relevanceScore += 200;
           }
-          
+
           relevanceScore += Math.log10(citations + 1) * 10 + works;
 
           console.log(`   ✓ ${author.display_name} from ${affiliation}, ${authorCity}`);
@@ -301,19 +351,19 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
             source: 'openalex',
             relevance_score: relevanceScore
           });
-          
+
           addedFromQuery++;
-          
+
           if (addedFromQuery >= 50) break;
         }
-        
+
         console.log(`   📍 Found ${cityMatches} from ${city}, added ${addedFromQuery} after filters`);
-        
+
       } catch (error) {
         console.error(`   ❌ Error:`, error);
       }
     }
-    
+
     console.log(`\n✅ TOTAL: ${results.length} experts from ${city}`);
     return results;
   };
@@ -331,7 +381,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
 
     try {
       const { city } = parseLocation(location);
-      
+
       if (!city) {
         setRecommendationError('Please specify a city in the location field (e.g., Mumbai, India)');
         setIsLoadingRecommendations(false);
@@ -342,7 +392,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
 
       // Find institutions in the city
       const institutionIds = await findCityInstitutions(city);
-      
+
       if (institutionIds.length === 0) {
         setRecommendationError(`No institutions found in ${city}. Try a different city or broader location.`);
         setIsLoadingRecommendations(false);
@@ -369,7 +419,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
       );
 
       // Sort by relevance score
-      const sorted = uniqueExperts.sort((a, b) => 
+      const sorted = uniqueExperts.sort((a, b) =>
         (b.relevance_score || 0) - (a.relevance_score || 0)
       );
 
@@ -384,7 +434,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
       // Split into speakers and judges
       const speakers = sorted.slice(0, 10);
       const judges = sorted.slice(10, 20);
-      
+
       setSpeakerResults(speakers);
       setJudgeResults(judges);
 
@@ -402,31 +452,31 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
         <h3 className="font-bold text-lg text-gray-900 mb-2">{person.name}</h3>
         {person.institution && (
           <p className="text-sm text-gray-600 mb-2 flex items-start gap-1">
-            <span className="text-blue-600">📍</span> 
+            <span className="text-blue-600">📍</span>
             <span className="flex-1">{person.institution}</span>
           </p>
         )}
       </div>
-      
+
       <div className="space-y-2.5 text-sm mb-4">
         <div className="bg-blue-50 p-2.5 rounded-lg">
           <p className="text-gray-700">
-            <strong className="text-blue-900">Expertise:</strong> 
+            <strong className="text-blue-900">Expertise:</strong>
             <span className="block mt-1 text-blue-800">{person.expertise}</span>
           </p>
         </div>
-        
+
         {(person.citations || person.works_count) && (
           <div className="flex items-center justify-between text-xs flex-wrap gap-2">
             {person.citations !== undefined && person.citations > 0 && (
               <div className="bg-purple-50 px-3 py-1.5 rounded-full">
-                <strong className="text-purple-800">Citations:</strong> 
+                <strong className="text-purple-800">Citations:</strong>
                 <span className="text-purple-900 font-semibold ml-1">{person.citations.toLocaleString()}</span>
               </div>
             )}
             {person.works_count !== undefined && person.works_count > 0 && (
               <div className="bg-green-50 px-3 py-1.5 rounded-full">
-                <strong className="text-green-800">Publications:</strong> 
+                <strong className="text-green-800">Publications:</strong>
                 <span className="text-green-900 font-semibold ml-1">{person.works_count}</span>
               </div>
             )}
@@ -524,41 +574,85 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">PR Tasks</label>
-        <input
-          type="text"
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-sm font-medium text-gray-700">PR Tasks</label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => openEmailDialog('PR')}
+            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-8 px-2"
+          >
+            <Mail className="w-4 h-4 mr-1.5" />
+            Send to PR Team
+          </Button>
+        </div>
+        <textarea
           {...register("prTasks")}
-          className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[80px]"
           placeholder="e.g., Write press release, Contact media"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Tech Tasks</label>
-        <input
-          type="text"
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-sm font-medium text-gray-700">Tech Tasks</label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => openEmailDialog('Tech')}
+            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-8 px-2"
+          >
+            <Mail className="w-4 h-4 mr-1.5" />
+            Send to Tech Team
+          </Button>
+        </div>
+        <textarea
           {...register("techTasks")}
-          className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[80px]"
           placeholder="e.g., Setup sound system, Test AV equipment"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Logistics Tasks</label>
-        <input
-          type="text"
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-sm font-medium text-gray-700">Logistics Tasks</label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => openEmailDialog('Logistics')}
+            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-8 px-2"
+          >
+            <Mail className="w-4 h-4 mr-1.5" />
+            Send to Logistics Team
+          </Button>
+        </div>
+        <textarea
           {...register("logisticsTasks")}
-          className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[80px]"
           placeholder="e.g., Book venue, Arrange catering"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Creatives Tasks</label>
-        <input
-          type="text"
+        <div className="flex justify-between items-center mb-1">
+          <label className="block text-sm font-medium text-gray-700">Creatives Tasks</label>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => openEmailDialog('Creatives')}
+            className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-8 px-2"
+          >
+            <Mail className="w-4 h-4 mr-1.5" />
+            Send to Creatives Team
+          </Button>
+        </div>
+        <textarea
           {...register("creativesTasks")}
-          className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent min-h-[80px]"
           placeholder="e.g., Design posters, Create social media content"
         />
       </div>
@@ -590,7 +684,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
         >
           {isLoadingRecommendations ? (
             <span className="flex items-center justify-center gap-2">
-              <span className="animate-spin">🔍</span> 
+              <span className="animate-spin">🔍</span>
               <span>Finding local experts...</span>
             </span>
           ) : (
@@ -604,7 +698,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
         {speakerResults.length > 0 && (
           <div className="mt-6">
             <h4 className="font-bold text-blue-900 mb-4 flex items-center gap-2 text-lg">
-              <span className="text-2xl">🎤</span> 
+              <span className="text-2xl">🎤</span>
               <span>Speaker Recommendations</span>
               <span className="ml-2 bg-blue-600 text-white text-xs px-2.5 py-1 rounded-full font-semibold">
                 {speakerResults.length}
@@ -621,7 +715,7 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
         {judgeResults.length > 0 && (
           <div className="mt-6">
             <h4 className="font-bold text-blue-900 mb-4 flex items-center gap-2 text-lg">
-              <span className="text-2xl">⚖️</span> 
+              <span className="text-2xl">⚖️</span>
               <span>Judge Recommendations</span>
               <span className="ml-2 bg-purple-600 text-white text-xs px-2.5 py-1 rounded-full font-semibold">
                 {judgeResults.length}
@@ -636,9 +730,9 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
         )}
       </div>
 
-      <Button 
-        type="submit" 
-        disabled={isLoading} 
+      <Button
+        type="submit"
+        disabled={isLoading}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-lg shadow-lg hover:shadow-xl transition-all"
       >
         {isLoading ? (
@@ -650,6 +744,40 @@ const EventManagementForm: React.FC<EventManagementFormProps> = ({
           <span>Generate Tasks</span>
         )}
       </Button>
+
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Send {currentEmailTaskType} Tasks</DialogTitle>
+            <DialogDescription>
+              Enter the email addresses (comma separated) for the {currentEmailTaskType} team. This will open your default email client.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="email" className="text-right text-sm font-medium">
+                To:
+              </label>
+              <input
+                id="email"
+                type="text"
+                value={emailRecipients}
+                onChange={(e) => setEmailRecipients(e.target.value)}
+                placeholder="email1@example.com, email2@example.com"
+                className="col-span-3 h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsEmailDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSendEmail} disabled={!emailRecipients}>
+              <Mail className="w-4 h-4 mr-2" /> Open Email Client
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 };
